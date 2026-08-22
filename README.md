@@ -30,6 +30,7 @@ curl http://localhost:5001/health
 ## Deploy to Kubernetes
 
 ```bash
+kubectl apply -f k8s/namespace.yaml
 kubectl apply -f k8s/
 kubectl get all -n vitalwatch
 kubectl port-forward -n vitalwatch svc/vitalwatch 8080:80

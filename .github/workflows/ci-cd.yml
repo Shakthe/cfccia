@@ -79,7 +79,9 @@ jobs:
           docker build -t shakthe/vitalwatch:v1 .
           kind load docker-image shakthe/vitalwatch:v1 --name vitalwatch-ci
       - name: Apply manifests
-        run: kubectl apply -f k8s/
+        run: |
+          kubectl apply -f k8s/namespace.yaml
+          kubectl apply -f k8s/
       - name: Wait for rollout
         run: kubectl rollout status deployment/vitalwatch -n vitalwatch --timeout=180s
       - name: Verify deployment
