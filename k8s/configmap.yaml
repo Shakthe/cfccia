@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: vitalwatch-config
+  namespace: vitalwatch
+data:
+  # Clinical thresholds — tunable per environment without rebuilding the image
+  HR_HIGH: "120"
+  HR_LOW: "45"
+  SPO2_LOW: "90"
+  TEMP_HIGH: "38.5"
+  SYS_HIGH: "180"
+  DIA_HIGH: "110"
+  MONITOR_INTERVAL: "15"
