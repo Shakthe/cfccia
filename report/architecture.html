@@ -48,7 +48,7 @@
   <text x="805" y="503" text-anchor="middle" font-size="13" fill="#16324f">Flask threshold engine: HR &gt;120 / &lt;45 bpm · SpO2 &lt;90% · temp &gt;38.5 °C · BP &gt;180/110 mmHg</text>
   <text x="805" y="524" text-anchor="middle" font-size="13" fill="#16324f">Deployment (2 replicas, rolling update) · ConfigMap thresholds · Secrets (AWS creds)</text>
   <text x="805" y="545" text-anchor="middle" font-size="13" fill="#16324f">liveness/readiness probes on /health · HPA 2 → 6 pods @ 70% CPU</text>
-  <text x="805" y="566" text-anchor="middle" font-size="13" fill="#16324f">Docker image: shakthe/vitalwatch:v1 (public, Docker Hub)</text>
+  <text x="805" y="566" text-anchor="middle" font-size="13" fill="#16324f">Docker image: shakthe1311/vitalwatch:v1 (public, Docker Hub)</text>
   <line x1="620" y1="612" x2="620" y2="654" stroke="#37475a" stroke-width="2.5" marker-end="url(#arr)"/>
   <text x="640" y="640" font-size="13" fill="#37475a">alert event on threshold breach</text>
 
@@ -75,6 +75,6 @@
   <text x="910" y="917" text-anchor="middle" font-size="13" fill="#16324f">live dashboard (Service) + SNS notifications</text>
 
   <text x="620" y="1000" text-anchor="middle" font-size="13" fill="#5a7184">Supporting services: Amazon DynamoDB (patient registry, alert history) · Amazon Timestream (vitals time-series) · CloudWatch (observability)</text>
-  <text x="620" y="1024" text-anchor="middle" font-size="13" fill="#5a7184">CI/CD: GitHub Actions — pytest → Docker Hub push → kubectl rollout · Container registry: Docker Hub (shakthe/vitalwatch)</text>
+  <text x="620" y="1024" text-anchor="middle" font-size="13" fill="#5a7184">CI/CD: GitHub Actions — pytest → Docker Hub push → kubectl rollout · Container registry: Docker Hub (shakthe1311/vitalwatch)</text>
 </svg>
 </body></html>

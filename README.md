@@ -21,8 +21,8 @@ MQTT (AWS IoT Core).
 ## Run locally
 
 ```bash
-docker build -t shakthe/vitalwatch:v1 .
-docker run -d -p 5001:5000 shakthe/vitalwatch:v1
+docker build -t shakthe1311/vitalwatch:v1 .
+docker run -d -p 5001:5000 shakthe1311/vitalwatch:v1
 open http://localhost:5001        # live dashboard
 curl http://localhost:5001/health
 ```

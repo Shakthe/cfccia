@@ -22,7 +22,7 @@ spec:
     spec:
       containers:
         - name: vitalwatch
-          image: shakthe/vitalwatch:v1
+          image: shakthe1311/vitalwatch:v1
           ports:
             - containerPort: 5000
           envFrom:

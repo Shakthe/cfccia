@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="utf-8">
-<title>Cloud and Fog Computing for IoT — CIA-1 — Question 2</title>
+<title>CS4001 CIA-1 Question 2</title>
 <style>
   @page { size: A4; margin: 18mm 16mm; }
   body { font-family: Georgia, 'Times New Roman', serif; color: #1a1a1a; font-size: 11.5pt; line-height: 1.55; margin: 0; }
@@ -35,36 +35,36 @@
   <div class="course">Cloud and Fog Computing for IoT<br>(CS4001)</div>
   <div class="q">CIA-1<br><br>Question 2: Smart Healthcare Remote Patient Monitoring Platform</div>
   <div class="links">
-    Docker image: <b>https://hub.docker.com/r/shakthe/vitalwatch</b> (v1, latest)<br>
+    Docker image: <b>https://hub.docker.com/r/shakthe1311/vitalwatch</b> (v1, latest)<br>
     GitHub repo link: <b>Shakthe/cfccia</b>
   </div>
-  <div class="sub">Submitted by <b>Shakthevell M &nbsp; [REG NO] &nbsp; IoT-B</b></div>
+  <div class="sub">Submitted by <b>Shakthevell M &nbsp; 23011102092 &nbsp; IoT-B</b></div>
 </div>
 
 <h2>1. System Architecture Diagram</h2>
-<p><b>VitalWatch</b> is designed as a five-layer, cloud-native pipeline on <b>Amazon Web Services (AWS)</b> that takes raw vital-sign telemetry from a patient's wearable device all the way through to an alert delivered back to that same wearable, so the patient is warned the moment any vital sign becomes dangerous.</p>
+<p>I named my system <b>VitalWatch</b>. The idea is simple: a patient wears a device that keeps measuring heart rate, blood pressure, oxygen level (SpO2) and body temperature. These readings go to the cloud, where my application checks them. If any reading crosses a danger limit, the system sends an alert straight back to the same wearable device, so the patient knows something is wrong right away.</p>
+<p>I built the cloud side on <b>Amazon Web Services (AWS)</b>. The full path of the data, from the sensors to the alert on the patient's wrist, has five layers, shown below.</p>
 
 <div class="nobreak">
 <img class="fig" src="figures/fig11_architecture.png" alt="architecture">
-<p class="figcap">Figure 1.1 — VitalWatch five-layer cloud architecture on AWS</p>
+<p class="figcap">Figure 1.1 — VitalWatch architecture on AWS, from wearable sensors to the alert on the patient's wearable</p>
 </div>
 
-<h3>Layer-by-layer flow</h3>
+<h3>How the data flows through each layer</h3>
 <table>
-<tr><th>Layer</th><th>Component</th><th>Role</th></tr>
-<tr><td>1 — Edge / IoT</td><td>Wearable sensors: heart rate (PPG), blood-pressure cuff, SpO2 pulse oximeter, body-temperature sensor</td><td>Generates continuous vital-sign telemetry for each registered patient</td></tr>
-<tr><td>2 — AWS Ingestion</td><td>AWS IoT Core</td><td>Device registry, X.509 certificate authentication, and MQTT telemetry ingestion at scale; an IoT Rule routes <code>vitalwatch/telemetry/&lt;device_id&gt;</code> into the stream</td></tr>
-<tr><td>3 — Stream Processing &amp; App</td><td>Amazon Kinesis Data Streams + Amazon EKS (Flask app, ConfigMap/Secrets, HPA)</td><td>Evaluates every reading against clinical thresholds (HR &gt;120 or &lt;45 bpm, SpO2 &lt;90%, temperature &gt;38.5 °C, BP &gt;180/110 mmHg) and runs the containerized application</td></tr>
-<tr><td>4 — Alert Delivery</td><td>AWS IoT Core downlink publish (primary) + Amazon SNS (secondary)</td><td>Pushes the alert to the patient's wearable over MQTT topic <code>vitalwatch/alerts/&lt;device_id&gt;</code>; SNS notifies the care team by SMS/email</td></tr>
-<tr><td>5 — Users</td><td>Patient wearable + clinicians/caregivers</td><td>The wearable vibrates and displays the alert to the patient; clinicians follow the live dashboard</td></tr>
+<tr><th>Layer</th><th>What is there</th><th>What it does</th></tr>
+<tr><td>1 — Edge / IoT</td><td>Sensors on the wearable: heart rate, blood pressure, SpO2, body temperature</td><td>Keeps measuring the patient's vital signs and sends them out</td></tr>
+<tr><td>2 — AWS Ingestion</td><td>AWS IoT Core</td><td>Every wearable connects here over MQTT with its own certificate. An IoT Rule picks up the readings from the topic <code>vitalwatch/telemetry/&lt;device_id&gt;</code> and passes them on</td></tr>
+<tr><td>3 — Processing &amp; App</td><td>Amazon Kinesis + Amazon EKS running my container</td><td>Kinesis holds the incoming stream of readings. My Flask app (running on Kubernetes) checks each reading against the limits: heart rate above 120 or below 45 bpm, SpO2 below 90%, temperature above 38.5 °C, BP above 180/110 mmHg</td></tr>
+<tr><td>4 — Alert Delivery</td><td>AWS IoT Core publish (main path) and Amazon SNS (extra path)</td><td>When a limit is crossed, the app publishes the alert to that patient's own topic <code>vitalwatch/alerts/&lt;device_id&gt;</code>, which the wearable listens to. SNS can also inform doctors/family by SMS or email</td></tr>
+<tr><td>5 — Users</td><td>The patient's wearable, plus doctors and caregivers</td><td>The wearable vibrates and shows the alert to the patient. Doctors can watch everything on a live dashboard</td></tr>
 </table>
-<p>Supporting services: Amazon DynamoDB (patient registry and alert history), Amazon Timestream (vitals time-series for trend analysis) and CloudWatch (observability).</p>
+<p>For storage, DynamoDB would keep the patient list and old alerts, Timestream would keep the history of readings, and CloudWatch would watch the health of the system itself.</p>
 
 <h2 class="pb">2. Creating the Docker Image</h2>
-<p>The application is a Python Flask service (<code>app/app.py</code>) that simulates the four wearable vital-sign streams (heart rate, blood pressure, SpO2, body temperature) for every registered patient, evaluates each reading against clinical thresholds (<code>app/alerts.py</code>) and pushes alerts to the patient's wearable device over MQTT (simulated when no AWS IoT endpoint is configured, real IoT Core publish when one is).</p>
+<p>The application itself is a Python Flask service (<code>app/app.py</code>). Since I do not have real medical wearables, the app generates realistic readings for each registered patient (with occasional bad readings mixed in on purpose), checks every reading against the danger limits (<code>app/alerts.py</code>), and publishes an alert to the patient's wearable topic whenever a limit is crossed. If no real AWS IoT endpoint is given, the publish is written to the logs instead, so everything can be tested without an AWS account.</p>
 
 <h3>Step 1 — Write the Dockerfile</h3>
-<p>The <code>Dockerfile</code> defines how the application is packaged:</p>
 <pre class="code">FROM python:3.12-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
@@ -87,251 +87,153 @@ HEALTHCHECK --interval=30s --timeout=5s --retries=3 \
       sys.exit(0 if urllib.request.urlopen('http://localhost:5000/health').status==200 else 1)"
 
 CMD ["gunicorn", "--workers", "2", "--bind", "0.0.0.0:5000", "app.app:app"]</pre>
+<p>Why I wrote it this way:</p>
 <ul>
-<li><b>Base image:</b> official lightweight Python 3.12 runtime. The <code>slim</code> variant keeps the final image small (213 MB vs ~1 GB for the full image), which speeds up pulls in Kubernetes and reduces attack surface.</li>
-<li><b>Environment settings:</b> disables <code>.pyc</code> files and forces real-time log output so <code>docker logs</code> / <code>kubectl logs</code> show wearable alert pushes immediately.</li>
-<li><b>Security best practice:</b> the container runs as a non-root user (<code>vitalwatch</code>), limiting damage in case of compromise.</li>
-<li><b>Layer caching optimization:</b> dependencies are copied and installed before the source code, so editing code never re-downloads packages — rebuilds take seconds.</li>
-<li><b>Port + self-healing:</b> documents port 5000 and lets Docker/Kubernetes detect an unhealthy container automatically via the <code>/health</code> endpoint.</li>
-<li><b>Production server:</b> gunicorn (WSGI) instead of Flask's dev server — 2 worker processes handle concurrent requests.</li>
+<li>I picked <code>python:3.12-slim</code> as the base because it is a much smaller download than the full Python image. My final image came to 213 MB, so Kubernetes can pull it quickly, and a smaller image also means fewer things inside it that could have security holes.</li>
+<li>The two ENV lines stop Python from writing <code>.pyc</code> files and make it print logs immediately, so I can see the alerts live with <code>docker logs</code> or <code>kubectl logs</code>.</li>
+<li>I copy <code>requirements.txt</code> and install packages <em>before</em> copying my code. Docker caches each step, so when I only change my code, it does not reinstall all the packages again — rebuilds finish in a few seconds.</li>
+<li>I made a normal user called <code>vitalwatch</code> and switched to it. The app never runs as root inside the container, which is safer.</li>
+<li>The HEALTHCHECK keeps calling my <code>/health</code> endpoint. If the app stops answering, Docker and Kubernetes can see the container is unhealthy and restart it on their own.</li>
+<li>I start the app with gunicorn (with 2 workers) and not with Flask's built-in server, because the built-in server is only meant for development and handles one request at a time.</li>
 </ul>
 
 <h3>Step 2 — Add a .dockerignore</h3>
-<p>Excludes tests, git history, Kubernetes manifests, the report and caches from the build context → smaller, cleaner images with no unnecessary files.</p>
+<p>I added a <code>.dockerignore</code> file so that tests, the git folder, the Kubernetes files, this report and cache files do not get copied into the image. The image only carries what the app actually needs.</p>
 
 <h3>Step 3 — Build the image</h3>
+<p>I built the image with two tags: <code>v1</code> (fixed version) and <code>latest</code> (always the newest). The final <code>.</code> tells Docker to use the current folder as the build context.</p>
 <div class="nobreak">
-<pre class="term">$ docker build -t shakthe/vitalwatch:v1 -t shakthe/vitalwatch:latest .
-Step 1/11 : FROM python:3.12-slim
-Step 2/11 : ENV PYTHONDONTWRITEBYTECODE=1     PYTHONUNBUFFERED=1
-Step 3/11 : WORKDIR /srv/vitalwatch
-Step 4/11 : COPY requirements.txt .
-Step 5/11 : RUN pip install --no-cache-dir -r requirements.txt
-Step 6/11 : COPY app ./app
-Step 7/11 : RUN useradd --create-home vitalwatch
-Step 8/11 : USER vitalwatch
-Step 9/11 : EXPOSE 5000
-Step 10/11 : HEALTHCHECK --interval=30s --timeout=5s --retries=3   CMD python -c &quot;import urllib.request,sys; sys.exit(0 if urllib.request.urlopen(&#x27;http://localhost:5000/health&#x27;).status==200 else 1)&quot;
-Step 11/11 : CMD [&quot;gunicorn&quot;, &quot;--workers&quot;, &quot;2&quot;, &quot;--bind&quot;, &quot;0.0.0.0:5000&quot;, &quot;app.app:app&quot;]
-Successfully built 17f8a49fc9c5
-Successfully tagged shakthe/vitalwatch:v1
-Successfully tagged shakthe/vitalwatch:latest</pre>
-<p class="figcap">Figure 2.1 — docker build: all 11 steps complete; image tagged v1 and latest</p>
+<pre class="term">__FIG21__</pre>
+<p class="figcap">Figure 2.1 — docker build finishing all 11 steps and tagging the image as v1 and latest</p>
 </div>
-<ul>
-<li><code>-t name:tag</code> — tags the image with the Docker Hub repository name. Two tags are applied: versioned (<code>v1</code>) and rolling (<code>latest</code>).</li>
-<li><code>.</code> — build context is the current directory (filtered by <code>.dockerignore</code>).</li>
-</ul>
 
 <h3>Step 4 — Verify locally</h3>
+<p>Before pushing anything, I ran the image on my machine. <code>-d</code> runs it in the background and <code>-p 5001:5000</code> connects port 5001 on my laptop to port 5000 inside the container.</p>
 <div class="nobreak">
-<pre class="term">$ docker run -d --name vitalwatch -p 5001:5000 shakthe/vitalwatch:v1
-793690c48f22caa4147e424d48c67470114f4630c50f41b6268056a929d21533
-
-$ curl -s http://localhost:5001/health
-{&quot;monitor_interval_s&quot;:15,&quot;patients&quot;:3,&quot;status&quot;:&quot;healthy&quot;}
-
-
-$ docker ps --format &quot;table {{.Names}}	{{.Image}}	{{.Status}}	{{.Ports}}&quot;
-NAMES                      IMAGE                   STATUS                   PORTS
-vitalwatch-control-plane   kindest/node:v1.36.1    Up 2 minutes             127.0.0.1:53055-&gt;6443/tcp
-vitalwatch-local           shakthe/vitalwatch:v1   Up 4 minutes (healthy)   0.0.0.0:5001-&gt;5000/tcp</pre>
-<p class="figcap">Figure 2.2 — container running locally with a passing Docker healthcheck ("healthy"); /health returns status healthy</p>
+<pre class="term">__FIG22__</pre>
+<p class="figcap">Figure 2.2 — the container running locally; /health answers "healthy" and docker ps shows the built-in healthcheck passing</p>
 </div>
-<ul>
-<li><code>-d</code> detached mode, <code>-p 5001:5000</code> maps host port 5001 → container port 5000.</li>
-<li>Verified <code>/health</code> returned <code>{"status": "healthy"}</code>, patient registration worked, and vital-sign alerts were triggered and dispatched to the wearable topic from inside the container.</li>
-</ul>
+<p>I checked that <code>/health</code> answered properly, that I could register a new patient through the API, and that alerts were generated and sent to the wearable topic from inside the container.</p>
 
 <h3>Step 5 — Push to Docker Hub</h3>
-<pre class="code">docker login -u shakthe
-docker push shakthe/vitalwatch:v1
-docker push shakthe/vitalwatch:latest</pre>
-<p>The image is now publicly accessible at <code>docker.io/shakthe/vitalwatch:v1</code> and can be pulled on any machine or cluster with <code>docker pull shakthe/vitalwatch:v1</code>.</p>
+<pre class="code">docker login -u shakthe1311
+docker buildx build --platform linux/amd64,linux/arm64 \
+  -t shakthe1311/vitalwatch:v1 -t shakthe1311/vitalwatch:latest --push .</pre>
+<p>I pushed the image with buildx for two CPU types (amd64 and arm64), so the same image works on normal cloud servers as well as ARM machines. Anyone can now pull it with <code>docker pull shakthe1311/vitalwatch:v1</code> — no login needed, the repository is public.</p>
 <div class="nobreak">
-__FIG23_DOCKERHUB__
-<p class="figcap">Figure 2.3 — public Docker Hub repository shakthe/vitalwatch with the v1 and latest tags</p>
+<img class="fig" src="figures/fig23_dockerhub.png" alt="dockerhub" style="max-width:92%">
+<p class="figcap">Figure 2.3 — the public Docker Hub repository shakthe1311/vitalwatch</p>
+</div>
+<div class="nobreak">
+<img class="fig" src="figures/fig23_tags.png" alt="dockerhub tags" style="max-width:92%">
+<p class="figcap">Figure 2.4 — the Tags page of the repository with the pull command</p>
 </div>
 
 <h3>Step 6 — Deploy anywhere without modification</h3>
-<p>The exact same public image runs unchanged under Kubernetes: <code>k8s/deployment.yaml</code> references <code>image: shakthe/vitalwatch:v1</code>, and the CI/CD pipeline deploys it into a cluster on every push (Section 4).</p>
+<p>Nothing in the image is tied to my laptop. All settings (limits, intervals, AWS endpoint) come from environment variables. So the exact image from Docker Hub runs as-is under Kubernetes — <code>k8s/deployment.yaml</code> simply says <code>image: shakthe1311/vitalwatch:v1</code>, and the CI/CD pipeline (Section 4) deploys the same image into a cluster on every push.</p>
 
 <h2 class="pb">3. Kubernetes Deployment Architecture</h2>
-<p>The Kubernetes manifests (in the <code>k8s/</code> directory) deploy the exact same public Docker Hub image without any modification:</p>
+<p>All the Kubernetes files are in the <code>k8s/</code> folder of the repo. They pull the same public image from Docker Hub and run it:</p>
 <table>
-<tr><th>Resource</th><th>File</th><th>Role</th></tr>
-<tr><td>Namespace</td><td>namespace.yaml</td><td>Isolates all VitalWatch resources inside the <code>vitalwatch</code> namespace</td></tr>
-<tr><td>ConfigMap</td><td>configmap.yaml</td><td>Clinical thresholds and monitor interval — tunable per environment without rebuilding the image</td></tr>
-<tr><td>Secret</td><td>secret.yaml</td><td>AWS IoT Core endpoint and credentials injected as environment variables (empty in the demo → simulated MQTT publish)</td></tr>
-<tr><td>Deployment</td><td>deployment.yaml</td><td>2 replicas, rolling updates (maxUnavailable=0), liveness/readiness probes on <code>/health</code>, resource requests/limits</td></tr>
-<tr><td>Service</td><td>service.yaml</td><td>NodePort 30090 locally — a one-line change to LoadBalancer for EKS</td></tr>
-<tr><td>HPA</td><td>service.yaml</td><td>Autoscales 2 → 6 pods at 70% CPU utilisation</td></tr>
+<tr><th>Resource</th><th>File</th><th>What it is for</th></tr>
+<tr><td>Namespace</td><td>namespace.yaml</td><td>Puts everything of this project in its own space called <code>vitalwatch</code>, away from other apps in the cluster</td></tr>
+<tr><td>ConfigMap</td><td>configmap.yaml</td><td>Holds the danger limits and the monitoring interval. I can change a limit and restart the pods — no need to rebuild the image</td></tr>
+<tr><td>Secret</td><td>secret.yaml</td><td>Holds the AWS IoT endpoint and keys. In my demo these are empty, so the app just logs the wearable pushes instead of really sending them</td></tr>
+<tr><td>Deployment</td><td>deployment.yaml</td><td>Runs 2 copies (replicas) of the container. Updates roll out one pod at a time so the service never goes fully down. Liveness and readiness probes keep hitting <code>/health</code>; a stuck pod gets restarted automatically</td></tr>
+<tr><td>Service</td><td>service.yaml</td><td>Gives the pods one stable address. I used NodePort 30090 for my local cluster; on EKS this would just become type LoadBalancer</td></tr>
+<tr><td>HPA</td><td>service.yaml</td><td>Autoscaler — if average CPU goes above 70%, it grows from 2 pods up to 6, and shrinks back later</td></tr>
 </table>
-<p>Deployment commands used:</p>
+<p>I tested all of this on a local cluster made with kind. These are the commands I ran:</p>
 <pre class="code">kind create cluster --name vitalwatch
-kind load docker-image shakthe/vitalwatch:v1 --name vitalwatch
+kind load docker-image shakthe1311/vitalwatch:v1 --name vitalwatch
+kubectl apply -f k8s/namespace.yaml
 kubectl apply -f k8s/
 kubectl rollout status deployment/vitalwatch -n vitalwatch</pre>
-<p>The cluster was verified end-to-end: both replicas are healthy, patient data and vital-sign readings are served through the Service, and the horizontal pod autoscaler is active and watching CPU load.</p>
 
 <div class="nobreak">
 <pre class="term">$ kubectl get all -n vitalwatch
-NAME                              READY   STATUS    RESTARTS   AGE
-pod/vitalwatch-86c4f469dd-4bpvq   1/1     Running   0          30s
-pod/vitalwatch-86c4f469dd-rzzr7   1/1     Running   0          30s
-
-NAME                 TYPE       CLUSTER-IP     EXTERNAL-IP   PORT(S)        AGE
-service/vitalwatch   NodePort   10.96.21.170   &lt;none&gt;        80:30090/TCP   38s
-
-NAME                         READY   UP-TO-DATE   AVAILABLE   AGE
-deployment.apps/vitalwatch   2/2     2            2           30s
-
-NAME                                    DESIRED   CURRENT   READY   AGE
-replicaset.apps/vitalwatch-86c4f469dd   2         2         2       30s
-
-NAME                                             REFERENCE               TARGETS              MINPODS   MAXPODS   REPLICAS   AGE
-horizontalpodautoscaler.autoscaling/vitalwatch   Deployment/vitalwatch   cpu: &lt;unknown&gt;/70%   2         6         2          38s</pre>
-<p class="figcap">Figure 3.1 — kubectl get all -n vitalwatch: 2/2 pods Running, NodePort service, Deployment, ReplicaSet and HPA (2→6 replicas) all healthy</p>
+__FIG31__</pre>
+<p class="figcap">Figure 3.1 — kubectl get all: both pods Running, the NodePort service, the Deployment with 2/2 ready, and the autoscaler set for 2 to 6 pods</p>
 </div>
 
-<h3>Functional verification through the deployed service</h3>
-<p>With the Service port-forwarded to <code>localhost:8080</code>, the API and dashboard were exercised directly against the running cluster:</p>
+<h3>Checking that the deployed service really works</h3>
+<p>I forwarded the Service to port 8080 on my machine and called the API running inside the cluster:</p>
 <div class="nobreak">
-<pre class="term">$ curl -s http://localhost:8080/patients | python3 -m json.tool
-[
-    {
-        &quot;age&quot;: 67,
-        &quot;condition&quot;: &quot;post-cardiac surgery&quot;,
-        &quot;device_id&quot;: &quot;wearable-ak-01&quot;,
-        &quot;name&quot;: &quot;Arun Kumar&quot;,
-        &quot;patient_id&quot;: &quot;P-1001&quot;
-    },
-    {
-        &quot;age&quot;: 54,
-        &quot;condition&quot;: &quot;COPD&quot;,
-        &quot;device_id&quot;: &quot;wearable-mn-02&quot;,
-        &quot;name&quot;: &quot;Meera Nair&quot;,
-        &quot;patient_id&quot;: &quot;P-1002&quot;
-    }
-]</pre>
-<p class="figcap">Figure 3.2 — GET /patients returning the registered patients through the cluster's Service</p>
+<pre class="term">__FIG32__</pre>
+<p class="figcap">Figure 3.2 — GET /patients answered by the pods inside the cluster, listing the registered patients</p>
 </div>
 <div class="nobreak">
-<pre class="term">$ curl -s -X POST http://localhost:8080/vitals/refresh | python3 -m json.tool
-{
-    &quot;alerts&quot;: [
-        {
-            &quot;category&quot;: &quot;LOW SPO2 ALERT&quot;,
-            &quot;message&quot;: &quot;Oxygen saturation 85% below 90%&quot;,
-            &quot;patient_id&quot;: &quot;P-1001&quot;,
-            &quot;reading&quot;: {
-                &quot;diastolic&quot;: 76,
-                &quot;heart_rate&quot;: 73,
-                &quot;spo2&quot;: 85,
-                &quot;systolic&quot;: 109,
-                &quot;temperature&quot;: 36.6
-            },
-            &quot;timestamp&quot;: &quot;2026-08-22T10:12:55Z&quot;,
-            &quot;topic&quot;: &quot;vitalwatch/alerts/wearable-ak-01&quot;
-        }
-    ],
-    &quot;readings&quot;: [
-        {
-            &quot;diastolic&quot;: 76,
-            &quot;heart_rate&quot;: 73,
-            &quot;patient_id&quot;: &quot;P-1001&quot;,
-            &quot;spo2&quot;: 85,
-            &quot;systolic&quot;: 109,
-            &quot;temperature&quot;: 36.6,
-            &quot;timestamp&quot;: &quot;2026-08-22T10:12:55Z&quot;
-        },
-        {
-            &quot;diastolic&quot;: 83,
-            &quot;heart_rate&quot;: 92,
-            &quot;patient_id&quot;: &quot;P-1002&quot;,
-            &quot;spo2&quot;: 96,
-            &quot;systolic&quot;: 127,
-            &quot;temperature&quot;: 36.9,
-            &quot;timestamp&quot;: &quot;2026-08-22T10:12:55Z&quot;
-        }
-    ]
-}</pre>
-<p class="figcap">Figure 3.3 — POST /vitals/refresh forcing a monitor cycle; a LOW SPO2 ALERT is triggered when oxygen saturation drops below the 90% threshold and is pushed to the patient's wearable topic</p>
+<pre class="term">__FIG33__</pre>
+<p class="figcap">Figure 3.3 — POST /vitals/refresh forces one monitoring round. Here the SpO2 came out at 85%, which is under the 90% limit, so a LOW SPO2 ALERT was created and sent to that patient's wearable topic</p>
 </div>
 <div class="nobreak">
 <img class="fig" src="figures/fig34_dashboard.png" alt="dashboard" style="max-width:96%">
-<p class="figcap">Figure 3.4 — live VitalWatch dashboard served from the cluster showing registered patients, current vitals (breaches highlighted in red) and recent alerts pushed to wearables</p>
+<p class="figcap">Figure 3.4 — the dashboard served from the cluster: patients, their latest vitals (bad values in red), and the last alerts that went to the wearables</p>
 </div>
-<p>The pod logs confirm alerts firing correctly and being pushed to the correct patient's wearable MQTT topic the moment a threshold is breached (the publish is simulated in this environment, and becomes a live AWS IoT Core delivery the moment a real endpoint is set in the Secret):</p>
+<p>The pod logs show the same thing from the inside — the moment a reading crosses a limit, an alert goes out to that exact patient's wearable topic. In my demo the MQTT publish is simulated and logged; if a real AWS IoT endpoint is put into the Secret, the very same code does the real publish.</p>
 <div class="nobreak">
-<pre class="term">$ kubectl logs vitalwatch-86c4f469dd-4bpvq -n vitalwatch
-2026-08-22 10:12:23,057 WARNING vitalwatch.alerts WEARABLE PUSH (simulated MQTT) -&gt; vitalwatch/alerts/wearable-ak-01 [Arun Kumar] FEVER ALERT: Body temperature 40.1 degC exceeds 38.5 degC
-2026-08-22 10:12:38,060 WARNING vitalwatch.alerts WEARABLE PUSH (simulated MQTT) -&gt; vitalwatch/alerts/wearable-ak-01 [Arun Kumar] FEVER ALERT: Body temperature 39.5 degC exceeds 38.5 degC
-2026-08-22 10:12:53,146 WARNING vitalwatch.alerts WEARABLE PUSH (simulated MQTT) -&gt; vitalwatch/alerts/wearable-mn-02 [Meera Nair] TACHYCARDIA ALERT: Heart rate 151 bpm exceeds 120 bpm
-2026-08-22 10:12:55,337 WARNING vitalwatch.alerts WEARABLE PUSH (simulated MQTT) -&gt; vitalwatch/alerts/wearable-ak-01 [Arun Kumar] LOW SPO2 ALERT: Oxygen saturation 85% below 90%
-2026-08-22 10:12:55,373 WARNING vitalwatch.alerts WEARABLE PUSH (simulated MQTT) -&gt; vitalwatch/alerts/wearable-ak-01 [Arun Kumar] LOW SPO2 ALERT: Oxygen saturation 84% below 90%</pre>
-<p class="figcap">Figure 3.5 — kubectl logs showing FEVER, TACHYCARDIA and LOW SPO2 alerts pushed to each patient's wearable topic</p>
+<pre class="term">__FIG35__</pre>
+<p class="figcap">Figure 3.5 — pod logs with FEVER, TACHYCARDIA and LOW SPO2 alerts going to each patient's own wearable topic</p>
 </div>
 
 <h2 class="pb">4. CI/CD Pipeline Workflow</h2>
-<p>The pipeline is defined in <code>.github/workflows/ci-cd.yml</code> and runs automatically on every push (and pull request) to <code>main</code>:</p>
+<p>The pipeline lives in <code>.github/workflows/ci-cd.yml</code>. GitHub Actions runs it by itself on every push (and pull request) to <code>main</code>. It has three jobs, and each one only starts if the one before it passed:</p>
 <table>
 <tr><th>Job</th><th>What it does</th></tr>
-<tr><td>Run Unit Tests</td><td>Installs dependencies and runs the 8-test pytest suite; a failure blocks everything downstream.</td></tr>
-<tr><td>Build and Push to Docker Hub</td><td>Logs into Docker Hub using repository secrets (<code>DOCKERHUB_USERNAME</code>, <code>DOCKERHUB_TOKEN</code>) and pushes tagged images (<code>latest</code>, <code>v1</code> + commit-SHA tag) with OCI labels (title, source, revision) only after tests pass.</td></tr>
-<tr><td>Deploy to Kubernetes</td><td>Creates a Kubernetes cluster in the runner (kind), loads the freshly built image, applies the <code>k8s/</code> manifests, waits for rollout status, and runs a smoke test that curls <code>/health</code> through the cluster Service.</td></tr>
+<tr><td>Run Unit Tests</td><td>Installs the packages and runs my 8 pytest tests. If even one test fails, nothing else runs — a broken image can never get published.</td></tr>
+<tr><td>Build and Push to Docker Hub</td><td>Logs in to Docker Hub with the repository secrets (<code>DOCKERHUB_USERNAME</code>, <code>DOCKERHUB_TOKEN</code>) and pushes the image with the tags <code>latest</code>, <code>v1</code> and the commit id, plus labels saying which commit it was built from.</td></tr>
+<tr><td>Deploy to Kubernetes</td><td>Starts a fresh Kubernetes cluster right inside the GitHub runner (using kind), loads the newly built image, applies all my <code>k8s/</code> files, waits for the rollout to finish, and finally runs a small curl pod that calls <code>/health</code> through the cluster Service to prove the deployed app answers.</td></tr>
 </table>
-<p>Secrets are configured under Repo → Settings → Secrets and variables → Actions. The screenshot below is an actual run of the pipeline ("Apply namespace before the rest of the manifests in the deploy job #4") showing all three jobs — Run Unit Tests, Build and Push to Docker Hub, and Deploy to Kubernetes — completing successfully in 1m 52s.</p>
+<p>The two Docker Hub secrets are added in the repo under Settings → Secrets and variables → Actions. Below is a real run of the pipeline — all three jobs finished green in 1m 52s:</p>
 <div class="nobreak">
 <img class="fig" src="figures/fig41_actions.png" alt="actions">
-
-<p class="figcap">Figure 4.1 — GitHub Actions run: all three CI/CD jobs (test, build &amp; push, deploy) green</p>
+<p class="figcap">Figure 4.1 — GitHub Actions run #4 with all three jobs (tests, build &amp; push, deploy) successful</p>
 </div>
 
 <h2 class="pb">5. Evaluation Report with Design Justification</h2>
-<h3>Technology stack</h3>
+<h3>Why I chose each technology</h3>
 <table>
-<tr><th>Choice</th><th>Justification</th></tr>
-<tr><td>AWS</td><td>AWS IoT Core is a managed, scalable MQTT gateway with per-device X.509 authentication — essential for medical wearables — and uniquely supports <b>downlink publish back to the device</b>, which is exactly how the alert reaches the patient's wearable. Kinesis buffers vitals bursts; EKS offers managed Kubernetes with an SLA; SNS covers the secondary care-team channel.</td></tr>
-<tr><td>Python Flask</td><td>Minimal footprint, fast development, and a huge ecosystem for IoT/data workloads; easy for evaluators to read.</td></tr>
-<tr><td>gunicorn</td><td>A production-grade WSGI server with multiple workers, unlike Flask's single-threaded development server.</td></tr>
-<tr><td>Docker (slim base)</td><td>213 MB image, fast pulls, a non-root user, and a built-in healthcheck — industry-standard packaging.</td></tr>
-<tr><td>Kubernetes</td><td>Self-healing (probes restart unhealthy pods — critical when patients depend on the monitor), horizontal scaling as the patient population grows, rolling updates with zero downtime, and config/secrets kept separate from code.</td></tr>
-<tr><td>GitHub Actions</td><td>Native to the repository, free for public repos, and a YAML-as-code pipeline that is directly visible to graders.</td></tr>
+<tr><th>Choice</th><th>Reason</th></tr>
+<tr><td>AWS</td><td>The main reason is AWS IoT Core. It gives every wearable its own certificate, handles MQTT at any scale, and most importantly it can publish <em>back down</em> to a device. That downlink is exactly how my alert reaches the patient's wearable, which is the core requirement of this question. Kinesis absorbs the flood of readings, EKS runs my container, and SNS covers the doctors/family messages.</td></tr>
+<tr><td>Python + Flask</td><td>Small, quick to write, and easy for anyone to read. Perfect size for this kind of service.</td></tr>
+<tr><td>gunicorn</td><td>A proper WSGI server that runs several workers, so more than one request can be served at a time. Flask's own server is only for development.</td></tr>
+<tr><td>Docker (slim base)</td><td>A 213 MB image that pulls fast, runs as a non-root user and checks its own health. One image, same behaviour everywhere.</td></tr>
+<tr><td>Kubernetes</td><td>For a patient monitor, downtime is not acceptable. Kubernetes restarts dead pods on its own, runs 2+ copies, updates them one by one with zero downtime, and keeps settings and secrets outside the image.</td></tr>
+<tr><td>GitHub Actions</td><td>It is already part of GitHub, free for public repos, and the whole pipeline sits in one YAML file in the repo where anyone (including the evaluator) can read it.</td></tr>
 </table>
 
 <h3>Design decisions</h3>
 <ul>
-<li><b>Threshold engine decoupled from sensors</b> — <code>alerts.evaluate()</code> accepts any reading dict, so swapping simulated data for real AWS IoT Core telemetry requires no change to alerting or delivery code.</li>
-<li><b>Alert delivered to the patient's own wearable</b> — every breach is published to <code>vitalwatch/alerts/&lt;device_id&gt;</code>, the per-device MQTT topic the wearable subscribes to, directly satisfying the question's requirement that the system alerts the patient through the wearable device.</li>
-<li><b>Env-var configuration (12-factor)</b> — clinical thresholds, the AWS IoT endpoint and the monitor interval are changed per environment via ConfigMap/Secret, so the same image runs unmodified from dev to production. Thresholds can even be personalised per deployment (e.g. a cardiac ward vs. general ward).</li>
-<li><b>Graceful degradation</b> — when the IoT endpoint is empty, wearable pushes are logged instead of crashing; the demo always works, and setting a real endpoint activates real MQTT delivery with zero code change.</li>
-<li><b>2 replicas + HPA</b> — a patient-monitoring system cannot have downtime; two replicas behind the Service give high availability, and the HPA absorbs load spikes as more wearables stream data.</li>
-<li><b>Clinically meaningful thresholds</b> — tachycardia (&gt;120 bpm), bradycardia (&lt;45 bpm), hypoxemia (SpO2 &lt;90%), fever (&gt;38.5 °C) and hypertensive crisis (&gt;180/110 mmHg) mirror standard early-warning criteria, so alerts are actionable rather than noisy.</li>
+<li><b>The alert goes to the patient's own wearable.</b> Each device listens on its own topic <code>vitalwatch/alerts/&lt;device_id&gt;</code>, and the app publishes the alert exactly there. This is the requirement of Question 2, and it is the main path of the design, not an afterthought.</li>
+<li><b>The checking code does not care where readings come from.</b> <code>alerts.evaluate()</code> just takes a reading and returns alerts. Today the readings come from my simulator; tomorrow they can come from real IoT Core telemetry, and the alert code does not change at all.</li>
+<li><b>All settings are environment variables.</b> Limits, the monitor interval and the AWS endpoint come from the ConfigMap and Secret. The same image goes from my laptop to a real cluster without being rebuilt. A hospital could even set stricter limits for a cardiac ward just by changing the ConfigMap.</li>
+<li><b>The demo never breaks.</b> If the AWS endpoint is empty, the app logs the wearable push instead of crashing. Put a real endpoint in the Secret and the real MQTT publish happens — no code change.</li>
+<li><b>2 replicas + autoscaler.</b> Two pods mean one can die and patients are still being monitored. The HPA adds pods when load grows, for example when many more patients are added.</li>
+<li><b>The limits are medically sensible.</b> Heart rate above 120 (tachycardia) or below 45 (bradycardia), SpO2 below 90% (low oxygen), temperature above 38.5 °C (fever) and BP above 180/110 (hypertensive crisis) are standard warning levels, so the alerts mean something and do not spam the patient.</li>
 </ul>
 
 <h3>Limitations</h3>
 <ul>
-<li>The in-memory patient/alert store resets on pod restart; a production deployment would use Amazon DynamoDB (registry, alert history) and Timestream (vitals time-series).</li>
-<li>The wearable MQTT push is simulated, standing in for AWS IoT Core downlink publish.</li>
-<li>Vital signs are simulated with occasional abnormal excursions rather than streamed from real sensors.</li>
-<li>The current deployment is single-region; multi-region failover is future work.</li>
+<li>Patients and alert history live in the app's memory, so they are lost when a pod restarts. A real deployment would keep them in DynamoDB and the readings in Timestream.</li>
+<li>The wearable push is simulated (logged) in my demo instead of a real AWS IoT Core publish.</li>
+<li>The vital signs come from a simulator, not from real sensors.</li>
+<li>Everything runs in one region; there is no failover to a second region yet.</li>
 </ul>
 
 <h2 class="pb">6. Conclusion and Future Enhancements</h2>
 <h3>Conclusion</h3>
-<p>VitalWatch demonstrates an end-to-end cloud-native remote patient monitoring pipeline: wearable vital-sign telemetry (heart rate, blood pressure, oxygen saturation, body temperature) is continuously evaluated against configurable clinical thresholds, and any breach is instantly pushed back to the patient's own wearable device over its per-device MQTT topic, with the care team notified in parallel. The application is containerized with Docker, published publicly on Docker Hub (<code>shakthe/vitalwatch:v1</code>), deployed on Kubernetes with health probes, autoscaling and zero-downtime rollouts, and delivered through an automated GitHub Actions CI/CD pipeline that tests every commit before building, publishing and deploying it into a real cluster. The design maps directly onto AWS managed services (IoT Core, Kinesis, EKS, SNS, DynamoDB), showing that the architecture is production-realistic rather than a toy exercise.</p>
+<p>VitalWatch covers the complete journey asked for in Question 2. Vital signs (heart rate, blood pressure, SpO2, body temperature) are collected non-stop for every registered patient, each reading is checked against clear medical limits, and the moment something is wrong the alert is pushed to that patient's own wearable device, with doctors and family covered through SNS as a second channel. The app is packed into a Docker image that anyone can pull from Docker Hub (<code>shakthe1311/vitalwatch:v1</code>), it runs on Kubernetes with health probes, two replicas, autoscaling and zero-downtime updates, and every push to GitHub is tested, built, published and deployed automatically by the Actions pipeline. Since the design sits on managed AWS services (IoT Core, Kinesis, EKS, SNS, DynamoDB), the same architecture would carry over to a real hospital deployment.</p>
 
 <h3>Future enhancements</h3>
 <ul>
-<li><b>Real wearable integration</b> — replace the simulator with AWS IoT Core + MQTT devices (BLE wearables bridged through a fog gateway), with Kinesis for stream processing.</li>
-<li><b>Persistent storage</b> — DynamoDB for patients/alert history and Amazon Timestream for vitals trend analysis.</li>
-<li><b>ML-based early warning</b> — anomaly detection (e.g. SageMaker) on vitals trends to predict deterioration before static thresholds are crossed, and per-patient personalised thresholds.</li>
-<li><b>Fog/edge pre-processing</b> — run threshold evaluation on a fog node (AWS IoT Greengrass) at the patient's home so critical alerts still fire during internet outages.</li>
-<li><b>Clinician escalation workflow</b> — acknowledgements, escalation to emergency services if the patient does not respond to the wearable alert, and FHIR integration with hospital EHR systems.</li>
-<li><b>Security &amp; compliance</b> — end-to-end encryption, audit logging and HIPAA-aligned data handling for real patient data.</li>
-<li><b>Observability</b> — Prometheus/Grafana dashboards and CloudWatch alarms on system health.</li>
-<li><b>Multi-region HA</b> — EKS in paired regions behind Route 53 health-checked failover for global resilience.</li>
+<li><b>Real wearables</b> — connect actual BLE devices through a small gateway to AWS IoT Core instead of the simulator.</li>
+<li><b>Proper storage</b> — DynamoDB for patients and alert history, Timestream for the reading history and trends.</li>
+<li><b>Smarter alerts</b> — use anomaly detection on the trend of a patient's vitals to warn <em>before</em> a hard limit is crossed, and tune limits per patient.</li>
+<li><b>Fog layer at home</b> — run the limit checks on a small box in the patient's house (AWS IoT Greengrass) so alerts still work even when the internet is down.</li>
+<li><b>Escalation</b> — if the patient does not acknowledge the alert on the wearable, automatically inform the doctor or emergency services; connect to hospital record systems (FHIR).</li>
+<li><b>Security and privacy</b> — encryption end to end, audit logs, and handling patient data as per healthcare rules like HIPAA.</li>
+<li><b>Monitoring the monitor</b> — Prometheus and Grafana dashboards plus CloudWatch alarms on the system itself.</li>
+<li><b>Two regions</b> — run the cluster in a second region with automatic failover so even a region outage does not stop patient monitoring.</li>
 </ul>
 
 </body>

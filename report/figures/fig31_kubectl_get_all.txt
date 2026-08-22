@@ -1,15 +1,17 @@
-NAME                              READY   STATUS    RESTARTS   AGE
-pod/vitalwatch-86c4f469dd-4bpvq   1/1     Running   0          30s
-pod/vitalwatch-86c4f469dd-rzzr7   1/1     Running   0          30s
+NAME                              READY   STATUS        RESTARTS   AGE
+pod/vitalwatch-5f7d85f98-qcqjb    1/1     Running       0          12s
+pod/vitalwatch-5f7d85f98-wfsdg    1/1     Running       0          22s
+pod/vitalwatch-86c4f469dd-4bpvq   1/1     Terminating   0          18m
 
 NAME                 TYPE       CLUSTER-IP     EXTERNAL-IP   PORT(S)        AGE
-service/vitalwatch   NodePort   10.96.21.170   <none>        80:30090/TCP   38s
+service/vitalwatch   NodePort   10.96.21.170   <none>        80:30090/TCP   18m
 
 NAME                         READY   UP-TO-DATE   AVAILABLE   AGE
-deployment.apps/vitalwatch   2/2     2            2           30s
+deployment.apps/vitalwatch   2/2     2            2           18m
 
 NAME                                    DESIRED   CURRENT   READY   AGE
-replicaset.apps/vitalwatch-86c4f469dd   2         2         2       30s
+replicaset.apps/vitalwatch-5f7d85f98    2         2         2       22s
+replicaset.apps/vitalwatch-86c4f469dd   0         0         0       18m
 
 NAME                                             REFERENCE               TARGETS              MINPODS   MAXPODS   REPLICAS   AGE
-horizontalpodautoscaler.autoscaling/vitalwatch   Deployment/vitalwatch   cpu: <unknown>/70%   2         6         2          38s
+horizontalpodautoscaler.autoscaling/vitalwatch   Deployment/vitalwatch   cpu: <unknown>/70%   2         6         2          18m

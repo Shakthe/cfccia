@@ -1,0 +1,4 @@
+$ docker push shakthe1311/vitalwatch:v1
+The push refers to repository [docker.io/shakthe1311/vitalwatch]
+f6837fc01b9f: Layer already exists
+v1: digest: sha256:17f8a49fc9c5a7ba22bd18c994edeea859f66dd40fc0ed0bd0f7a18a11770468 size: 2272

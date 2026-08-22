@@ -76,8 +76,8 @@ jobs:
           cluster_name: vitalwatch-ci
       - name: Build image and load into cluster
         run: |
-          docker build -t shakthe/vitalwatch:v1 .
-          kind load docker-image shakthe/vitalwatch:v1 --name vitalwatch-ci
+          docker build -t shakthe1311/vitalwatch:v1 .
+          kind load docker-image shakthe1311/vitalwatch:v1 --name vitalwatch-ci
       - name: Apply manifests
         run: |
           kubectl apply -f k8s/namespace.yaml
