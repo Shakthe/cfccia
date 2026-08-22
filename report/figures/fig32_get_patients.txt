@@ -1,0 +1,17 @@
+$ curl -s http://localhost:8080/patients | python3 -m json.tool
+[
+    {
+        "age": 67,
+        "condition": "post-cardiac surgery",
+        "device_id": "wearable-ak-01",
+        "name": "Arun Kumar",
+        "patient_id": "P-1001"
+    },
+    {
+        "age": 54,
+        "condition": "COPD",
+        "device_id": "wearable-mn-02",
+        "name": "Meera Nair",
+        "patient_id": "P-1002"
+    }
+]

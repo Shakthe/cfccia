@@ -1,0 +1,6 @@
+$ kubectl logs vitalwatch-86c4f469dd-4bpvq -n vitalwatch
+2026-08-22 10:12:23,057 WARNING vitalwatch.alerts WEARABLE PUSH (simulated MQTT) -> vitalwatch/alerts/wearable-ak-01 [Arun Kumar] FEVER ALERT: Body temperature 40.1 degC exceeds 38.5 degC
+2026-08-22 10:12:38,060 WARNING vitalwatch.alerts WEARABLE PUSH (simulated MQTT) -> vitalwatch/alerts/wearable-ak-01 [Arun Kumar] FEVER ALERT: Body temperature 39.5 degC exceeds 38.5 degC
+2026-08-22 10:12:53,146 WARNING vitalwatch.alerts WEARABLE PUSH (simulated MQTT) -> vitalwatch/alerts/wearable-mn-02 [Meera Nair] TACHYCARDIA ALERT: Heart rate 151 bpm exceeds 120 bpm
+2026-08-22 10:12:55,337 WARNING vitalwatch.alerts WEARABLE PUSH (simulated MQTT) -> vitalwatch/alerts/wearable-ak-01 [Arun Kumar] LOW SPO2 ALERT: Oxygen saturation 85% below 90%
+2026-08-22 10:12:55,373 WARNING vitalwatch.alerts WEARABLE PUSH (simulated MQTT) -> vitalwatch/alerts/wearable-ak-01 [Arun Kumar] LOW SPO2 ALERT: Oxygen saturation 84% below 90%

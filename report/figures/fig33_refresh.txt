@@ -1,0 +1,39 @@
+$ curl -s -X POST http://localhost:8080/vitals/refresh | python3 -m json.tool
+{
+    "alerts": [
+        {
+            "category": "LOW SPO2 ALERT",
+            "message": "Oxygen saturation 85% below 90%",
+            "patient_id": "P-1001",
+            "reading": {
+                "diastolic": 76,
+                "heart_rate": 73,
+                "spo2": 85,
+                "systolic": 109,
+                "temperature": 36.6
+            },
+            "timestamp": "2026-08-22T10:12:55Z",
+            "topic": "vitalwatch/alerts/wearable-ak-01"
+        }
+    ],
+    "readings": [
+        {
+            "diastolic": 76,
+            "heart_rate": 73,
+            "patient_id": "P-1001",
+            "spo2": 85,
+            "systolic": 109,
+            "temperature": 36.6,
+            "timestamp": "2026-08-22T10:12:55Z"
+        },
+        {
+            "diastolic": 83,
+            "heart_rate": 92,
+            "patient_id": "P-1002",
+            "spo2": 96,
+            "systolic": 127,
+            "temperature": 36.9,
+            "timestamp": "2026-08-22T10:12:55Z"
+        }
+    ]
+}

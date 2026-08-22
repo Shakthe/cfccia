@@ -1,0 +1,15 @@
+$ docker build -t shakthe/vitalwatch:v1 -t shakthe/vitalwatch:latest .
+Step 1/11 : FROM python:3.12-slim
+Step 2/11 : ENV PYTHONDONTWRITEBYTECODE=1     PYTHONUNBUFFERED=1
+Step 3/11 : WORKDIR /srv/vitalwatch
+Step 4/11 : COPY requirements.txt .
+Step 5/11 : RUN pip install --no-cache-dir -r requirements.txt
+Step 6/11 : COPY app ./app
+Step 7/11 : RUN useradd --create-home vitalwatch
+Step 8/11 : USER vitalwatch
+Step 9/11 : EXPOSE 5000
+Step 10/11 : HEALTHCHECK --interval=30s --timeout=5s --retries=3   CMD python -c "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:5000/health').status==200 else 1)"
+Step 11/11 : CMD ["gunicorn", "--workers", "2", "--bind", "0.0.0.0:5000", "app.app:app"]
+Successfully built 17f8a49fc9c5
+Successfully tagged shakthe/vitalwatch:v1
+Successfully tagged shakthe/vitalwatch:latest

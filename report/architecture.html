@@ -1,0 +1,80 @@
+<!doctype html><html><head><meta charset="utf-8"><style>body{margin:0;background:#fff}</style></head><body>
+<svg width="1240" height="1060" viewBox="0 0 1240 1060" xmlns="http://www.w3.org/2000/svg" font-family="Helvetica,Arial,sans-serif">
+  <defs>
+    <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#37475a"/>
+    </marker>
+  </defs>
+  <text x="620" y="42" text-anchor="middle" font-size="26" font-weight="bold" fill="#16324f">VitalWatch — Smart Healthcare Remote Patient Monitoring Platform (AWS)</text>
+
+  <!-- Layer 1: Edge -->
+  <rect x="60" y="80" width="1120" height="130" rx="12" fill="#eef6ee" stroke="#3f8624" stroke-width="2"/>
+  <text x="80" y="108" font-size="16" font-weight="bold" fill="#3f8624">LAYER 1 — EDGE / IoT: Patient wearable devices</text>
+  <g font-size="14" fill="#16324f">
+    <rect x="90" y="125" width="240" height="62" rx="8" fill="#fff" stroke="#3f8624"/>
+    <text x="210" y="150" text-anchor="middle" font-weight="bold">Heart-rate sensor</text><text x="210" y="170" text-anchor="middle">PPG, bpm</text>
+    <rect x="360" y="125" width="240" height="62" rx="8" fill="#fff" stroke="#3f8624"/>
+    <text x="480" y="150" text-anchor="middle" font-weight="bold">Blood-pressure cuff</text><text x="480" y="170" text-anchor="middle">systolic / diastolic mmHg</text>
+    <rect x="630" y="125" width="240" height="62" rx="8" fill="#fff" stroke="#3f8624"/>
+    <text x="750" y="150" text-anchor="middle" font-weight="bold">SpO2 pulse oximeter</text><text x="750" y="170" text-anchor="middle">oxygen saturation %</text>
+    <rect x="900" y="125" width="240" height="62" rx="8" fill="#fff" stroke="#3f8624"/>
+    <text x="1020" y="150" text-anchor="middle" font-weight="bold">Body-temp sensor</text><text x="1020" y="170" text-anchor="middle">skin temperature °C</text>
+  </g>
+  <line x1="620" y1="210" x2="620" y2="252" stroke="#37475a" stroke-width="2.5" marker-end="url(#arr)"/>
+  <text x="640" y="238" font-size="13" fill="#37475a">MQTT over TLS (X.509 device certificates)</text>
+
+  <!-- Layer 2: Ingestion -->
+  <rect x="60" y="256" width="1120" height="110" rx="12" fill="#fff3e6" stroke="#d86613" stroke-width="2"/>
+  <text x="80" y="284" font-size="16" font-weight="bold" fill="#d86613">LAYER 2 — AWS INGESTION</text>
+  <rect x="90" y="298" width="380" height="52" rx="8" fill="#fff" stroke="#d86613"/>
+  <text x="280" y="320" text-anchor="middle" font-size="14" font-weight="bold" fill="#16324f">AWS IoT Core</text>
+  <text x="280" y="340" text-anchor="middle" font-size="13" fill="#16324f">device registry · MQTT broker · rules engine</text>
+  <rect x="500" y="298" width="640" height="52" rx="8" fill="#fff" stroke="#d86613"/>
+  <text x="820" y="320" text-anchor="middle" font-size="14" font-weight="bold" fill="#16324f">IoT Rule: telemetry topic → Kinesis</text>
+  <text x="820" y="340" text-anchor="middle" font-size="13" fill="#16324f">vitalwatch/telemetry/&lt;device_id&gt; routed to the stream</text>
+  <line x1="620" y1="366" x2="620" y2="408" stroke="#37475a" stroke-width="2.5" marker-end="url(#arr)"/>
+
+  <!-- Layer 3: Processing -->
+  <rect x="60" y="412" width="1120" height="200" rx="12" fill="#e8f1fb" stroke="#0b5394" stroke-width="2"/>
+  <text x="80" y="440" font-size="16" font-weight="bold" fill="#0b5394">LAYER 3 — STREAM PROCESSING &amp; APPLICATION</text>
+  <rect x="90" y="455" width="320" height="130" rx="8" fill="#fff" stroke="#0b5394"/>
+  <text x="250" y="482" text-anchor="middle" font-size="14" font-weight="bold" fill="#16324f">Amazon Kinesis Data Streams</text>
+  <text x="250" y="504" text-anchor="middle" font-size="13" fill="#16324f">ordered, replayable vitals stream</text>
+  <text x="250" y="524" text-anchor="middle" font-size="13" fill="#16324f">buffers bursts from thousands</text>
+  <text x="250" y="544" text-anchor="middle" font-size="13" fill="#16324f">of wearables</text>
+  <line x1="410" y1="520" x2="465" y2="520" stroke="#37475a" stroke-width="2.5" marker-end="url(#arr)"/>
+  <rect x="470" y="455" width="670" height="130" rx="8" fill="#fff" stroke="#0b5394"/>
+  <text x="805" y="480" text-anchor="middle" font-size="14" font-weight="bold" fill="#16324f">Amazon EKS — VitalWatch application (this project's container)</text>
+  <text x="805" y="503" text-anchor="middle" font-size="13" fill="#16324f">Flask threshold engine: HR &gt;120 / &lt;45 bpm · SpO2 &lt;90% · temp &gt;38.5 °C · BP &gt;180/110 mmHg</text>
+  <text x="805" y="524" text-anchor="middle" font-size="13" fill="#16324f">Deployment (2 replicas, rolling update) · ConfigMap thresholds · Secrets (AWS creds)</text>
+  <text x="805" y="545" text-anchor="middle" font-size="13" fill="#16324f">liveness/readiness probes on /health · HPA 2 → 6 pods @ 70% CPU</text>
+  <text x="805" y="566" text-anchor="middle" font-size="13" fill="#16324f">Docker image: shakthe/vitalwatch:v1 (public, Docker Hub)</text>
+  <line x1="620" y1="612" x2="620" y2="654" stroke="#37475a" stroke-width="2.5" marker-end="url(#arr)"/>
+  <text x="640" y="640" font-size="13" fill="#37475a">alert event on threshold breach</text>
+
+  <!-- Layer 4: Alert delivery -->
+  <rect x="60" y="658" width="1120" height="120" rx="12" fill="#fdecea" stroke="#c0392b" stroke-width="2"/>
+  <text x="80" y="686" font-size="16" font-weight="bold" fill="#c0392b">LAYER 4 — ALERT DELIVERY</text>
+  <rect x="90" y="700" width="560" height="62" rx="8" fill="#fff" stroke="#c0392b"/>
+  <text x="370" y="725" text-anchor="middle" font-size="14" font-weight="bold" fill="#16324f">AWS IoT Core downlink publish (primary)</text>
+  <text x="370" y="746" text-anchor="middle" font-size="13" fill="#16324f">MQTT topic vitalwatch/alerts/&lt;device_id&gt; → patient's wearable</text>
+  <rect x="680" y="700" width="460" height="62" rx="8" fill="#fff" stroke="#c0392b"/>
+  <text x="910" y="725" text-anchor="middle" font-size="14" font-weight="bold" fill="#16324f">Amazon SNS (secondary)</text>
+  <text x="910" y="746" text-anchor="middle" font-size="13" fill="#16324f">SMS / email to care team and family</text>
+  <line x1="370" y1="778" x2="370" y2="820" stroke="#37475a" stroke-width="2.5" marker-end="url(#arr)"/>
+  <line x1="910" y1="778" x2="910" y2="820" stroke="#37475a" stroke-width="2.5" marker-end="url(#arr)"/>
+
+  <!-- Layer 5: Users -->
+  <rect x="60" y="824" width="1120" height="130" rx="12" fill="#f3eefb" stroke="#6a3fb5" stroke-width="2"/>
+  <text x="80" y="852" font-size="16" font-weight="bold" fill="#6a3fb5">LAYER 5 — USERS</text>
+  <rect x="90" y="868" width="560" height="70" rx="8" fill="#fff" stroke="#6a3fb5"/>
+  <text x="370" y="895" text-anchor="middle" font-size="14" font-weight="bold" fill="#16324f">Patient — wearable device</text>
+  <text x="370" y="917" text-anchor="middle" font-size="13" fill="#16324f">wearable vibrates and displays the alert in real time</text>
+  <rect x="680" y="868" width="460" height="70" rx="8" fill="#fff" stroke="#6a3fb5"/>
+  <text x="910" y="895" text-anchor="middle" font-size="14" font-weight="bold" fill="#16324f">Clinicians / caregivers</text>
+  <text x="910" y="917" text-anchor="middle" font-size="13" fill="#16324f">live dashboard (Service) + SNS notifications</text>
+
+  <text x="620" y="1000" text-anchor="middle" font-size="13" fill="#5a7184">Supporting services: Amazon DynamoDB (patient registry, alert history) · Amazon Timestream (vitals time-series) · CloudWatch (observability)</text>
+  <text x="620" y="1024" text-anchor="middle" font-size="13" fill="#5a7184">CI/CD: GitHub Actions — pytest → Docker Hub push → kubectl rollout · Container registry: Docker Hub (shakthe/vitalwatch)</text>
+</svg>
+</body></html>

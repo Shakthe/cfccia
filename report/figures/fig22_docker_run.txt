@@ -1,0 +1,11 @@
+$ docker run -d --name vitalwatch -p 5001:5000 shakthe/vitalwatch:v1
+793690c48f22caa4147e424d48c67470114f4630c50f41b6268056a929d21533
+
+$ curl -s http://localhost:5001/health
+{"monitor_interval_s":15,"patients":3,"status":"healthy"}
+
+
+$ docker ps --format "table {{.Names}}	{{.Image}}	{{.Status}}	{{.Ports}}"
+NAMES                      IMAGE                   STATUS                   PORTS
+vitalwatch-control-plane   kindest/node:v1.36.1    Up 2 minutes             127.0.0.1:53055->6443/tcp
+vitalwatch-local           shakthe/vitalwatch:v1   Up 4 minutes (healthy)   0.0.0.0:5001->5000/tcp
