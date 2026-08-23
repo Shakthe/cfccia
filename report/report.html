@@ -62,9 +62,9 @@
 <p>For storage, DynamoDB would keep the patient list and old alerts, Timestream would keep the history of readings, and CloudWatch would watch the health of the system itself.</p>
 
 <h2 class="pb">2. Creating the Docker Image</h2>
-<p>The application itself is a Python Flask service (<code>app/app.py</code>). Since I do not have real medical wearables, the app generates realistic readings for each registered patient (with occasional bad readings mixed in on purpose), checks every reading against the danger limits (<code>app/alerts.py</code>), and publishes an alert to the patient's wearable topic whenever a limit is crossed. If no real AWS IoT endpoint is given, the publish is written to the logs instead, so everything can be tested without an AWS account.</p>
+<p>The application is one small Flask program, <code>app/app.py</code>. Since I do not have real medical wearables, the app generates realistic readings for each registered patient (with occasional bad readings mixed in on purpose), checks every reading against the danger limits (<code>app/alerts.py</code>), and publishes an alert to the patient's wearable topic whenever a limit is crossed. If no real AWS IoT endpoint is given, the publish is written to the logs instead, so everything can be tested without an AWS account.</p>
 
-<h3>Step 1 — Write the Dockerfile</h3>
+<h3>Step 1 — The Dockerfile</h3>
 <pre class="code">FROM python:3.12-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
@@ -92,30 +92,30 @@ CMD ["gunicorn", "--workers", "2", "--bind", "0.0.0.0:5000", "app.app:app"]</pre
 <li>I picked <code>python:3.12-slim</code> as the base because it is a much smaller download than the full Python image. My final image came to 213 MB, so Kubernetes can pull it quickly, and a smaller image also means fewer things inside it that could have security holes.</li>
 <li>The two ENV lines stop Python from writing <code>.pyc</code> files and make it print logs immediately, so I can see the alerts live with <code>docker logs</code> or <code>kubectl logs</code>.</li>
 <li>I copy <code>requirements.txt</code> and install packages <em>before</em> copying my code. Docker caches each step, so when I only change my code, it does not reinstall all the packages again — rebuilds finish in a few seconds.</li>
-<li>I made a normal user called <code>vitalwatch</code> and switched to it. The app never runs as root inside the container, which is safer.</li>
+<li>I created an ordinary user called <code>vitalwatch</code> and switched to it, so the app never has root rights inside the container — safer if anything goes wrong.</li>
 <li>The HEALTHCHECK keeps calling my <code>/health</code> endpoint. If the app stops answering, Docker and Kubernetes can see the container is unhealthy and restart it on their own.</li>
 <li>I start the app with gunicorn (with 2 workers) and not with Flask's built-in server, because the built-in server is only meant for development and handles one request at a time.</li>
 </ul>
 
-<h3>Step 2 — Add a .dockerignore</h3>
+<h3>Step 2 — The .dockerignore file</h3>
 <p>I added a <code>.dockerignore</code> file so that tests, the git folder, the Kubernetes files, this report and cache files do not get copied into the image. The image only carries what the app actually needs.</p>
 
-<h3>Step 3 — Build the image</h3>
+<h3>Step 3 — Building the image</h3>
 <p>I built the image with two tags: <code>v1</code> (fixed version) and <code>latest</code> (always the newest). The final <code>.</code> tells Docker to use the current folder as the build context.</p>
 <div class="nobreak">
 <pre class="term">__FIG21__</pre>
 <p class="figcap">Figure 2.1 — docker build finishing all 11 steps and tagging the image as v1 and latest</p>
 </div>
 
-<h3>Step 4 — Verify locally</h3>
+<h3>Step 4 — Testing it on my machine</h3>
 <p>Before pushing anything, I ran the image on my machine. <code>-d</code> runs it in the background and <code>-p 5001:5000</code> connects port 5001 on my laptop to port 5000 inside the container.</p>
 <div class="nobreak">
 <pre class="term">__FIG22__</pre>
 <p class="figcap">Figure 2.2 — the container running locally; /health answers "healthy" and docker ps shows the built-in healthcheck passing</p>
 </div>
-<p>I checked that <code>/health</code> answered properly, that I could register a new patient through the API, and that alerts were generated and sent to the wearable topic from inside the container.</p>
+<p>I checked that <code>/health</code> answered properly, that I could register a new patient through the API, and and that the running container was generating alerts and sending them out on the wearable topic.</p>
 
-<h3>Step 5 — Push to Docker Hub</h3>
+<h3>Step 5 — Publishing the image on Docker Hub</h3>
 <pre class="code">docker login -u shakthe1311
 docker buildx build --platform linux/amd64,linux/arm64 \
   -t shakthe1311/vitalwatch:v1 -t shakthe1311/vitalwatch:latest --push .</pre>
@@ -129,7 +129,7 @@ docker buildx build --platform linux/amd64,linux/arm64 \
 <p class="figcap">Figure 2.4 — the Tags page of the repository with the pull command</p>
 </div>
 
-<h3>Step 6 — Deploy anywhere without modification</h3>
+<h3>Step 6 — The same image runs anywhere</h3>
 <p>Nothing in the image is tied to my laptop. All settings (limits, intervals, AWS endpoint) come from environment variables. So the exact image from Docker Hub runs as-is under Kubernetes — <code>k8s/deployment.yaml</code> simply says <code>image: shakthe1311/vitalwatch:v1</code>, and the CI/CD pipeline (Section 4) deploys the same image into a cluster on every push.</p>
 
 <h2 class="pb">3. Kubernetes Deployment Architecture</h2>
@@ -177,11 +177,11 @@ __FIG31__</pre>
 </div>
 
 <h2 class="pb">4. CI/CD Pipeline Workflow</h2>
-<p>The pipeline lives in <code>.github/workflows/ci-cd.yml</code>. GitHub Actions runs it by itself on every push (and pull request) to <code>main</code>. It has three jobs, and each one only starts if the one before it passed:</p>
+<p>The pipeline lives in <code>.github/workflows/ci-cd.yml</code>. GitHub Actions starts it automatically whenever anything lands on <code>main</code>, and also on pull requests. It has three jobs, and each one only starts if the one before it passed:</p>
 <table>
-<tr><th>Job</th><th>What it does</th></tr>
+<tr><th>Job</th><th>What happens in it</th></tr>
 <tr><td>Run Unit Tests</td><td>Installs the packages and runs my 8 pytest tests. If even one test fails, nothing else runs — a broken image can never get published.</td></tr>
-<tr><td>Build and Push to Docker Hub</td><td>Logs in to Docker Hub with the repository secrets (<code>DOCKERHUB_USERNAME</code>, <code>DOCKERHUB_TOKEN</code>) and pushes the image with the tags <code>latest</code>, <code>v1</code> and the commit id, plus labels saying which commit it was built from.</td></tr>
+<tr><td>Build and Push to Docker Hub</td><td>Signs in to Docker Hub using two secrets stored in the repository (<code>DOCKERHUB_USERNAME</code> and <code>DOCKERHUB_TOKEN</code>), then uploads the image under three tags — <code>latest</code>, <code>v1</code> and the commit id — with labels recording the exact commit it came from.</td></tr>
 <tr><td>Deploy to Kubernetes</td><td>Starts a fresh Kubernetes cluster right inside the GitHub runner (using kind), loads the newly built image, applies all my <code>k8s/</code> files, waits for the rollout to finish, and finally runs a small curl pod that calls <code>/health</code> through the cluster Service to prove the deployed app answers.</td></tr>
 </table>
 <p>The two Docker Hub secrets are added in the repo under Settings → Secrets and variables → Actions. Below is a real run of the pipeline — all three jobs finished green in 1m 52s:</p>
@@ -197,7 +197,7 @@ __FIG31__</pre>
 <tr><td>AWS</td><td>The main reason is AWS IoT Core. It gives every wearable its own certificate, handles MQTT at any scale, and most importantly it can publish <em>back down</em> to a device. That downlink is exactly how my alert reaches the patient's wearable, which is the core requirement of this question. Kinesis absorbs the flood of readings, EKS runs my container, and SNS covers the doctors/family messages.</td></tr>
 <tr><td>Python + Flask</td><td>Small, quick to write, and easy for anyone to read. Perfect size for this kind of service.</td></tr>
 <tr><td>gunicorn</td><td>A proper WSGI server that runs several workers, so more than one request can be served at a time. Flask's own server is only for development.</td></tr>
-<tr><td>Docker (slim base)</td><td>A 213 MB image that pulls fast, runs as a non-root user and checks its own health. One image, same behaviour everywhere.</td></tr>
+<tr><td>Docker (slim base)</td><td>A 213 MB image that downloads fast, drops root rights and keeps checking its own health. One image, same behaviour everywhere.</td></tr>
 <tr><td>Kubernetes</td><td>For a patient monitor, downtime is not acceptable. Kubernetes restarts dead pods on its own, runs 2+ copies, updates them one by one with zero downtime, and keeps settings and secrets outside the image.</td></tr>
 <tr><td>GitHub Actions</td><td>It is already part of GitHub, free for public repos, and the whole pipeline sits in one YAML file in the repo where anyone (including the evaluator) can read it.</td></tr>
 </table>
