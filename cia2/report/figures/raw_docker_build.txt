@@ -1,0 +1,226 @@
+DEPRECATED: The legacy builder is deprecated and will be removed in a future release.
+            Install the buildx component to build images with BuildKit:
+            https://docs.docker.com/go/buildx/
+
+Sending build context to Docker daemon  126.5kB
+Step 1/13 : FROM python:3.12-slim
+ ---> 2c941e860699
+Step 2/13 : ENV PYTHONDONTWRITEBYTECODE=1     PYTHONUNBUFFERED=1
+ ---> Using cache
+ ---> 107272b5a654
+Step 3/13 : RUN apt-get update  && apt-get install -y --no-install-recommends iproute2  && rm -rf /var/lib/apt/lists/*
+ ---> Running in 4a9f681dcf97
+Get:1 http://deb.debian.org/debian trixie InRelease [140 kB]
+Get:2 http://deb.debian.org/debian trixie-updates InRelease [47.3 kB]
+Get:3 http://deb.debian.org/debian-security trixie-security InRelease [43.4 kB]
+Get:4 http://deb.debian.org/debian trixie/main arm64 Packages [9614 kB]
+Get:5 http://deb.debian.org/debian trixie-updates/main arm64 Packages [4424 B]
+Get:6 http://deb.debian.org/debian-security trixie-security/main arm64 Packages [270 kB]
+Fetched 10.1 MB in 2s (4794 kB/s)
+Reading package lists...
+Reading package lists...
+Building dependency tree...
+Reading state information...
+The following additional packages will be installed:
+  libbpf1 libcap2 libcap2-bin libcom-err2 libelf1t64 libgssapi-krb5-2
+  libk5crypto3 libkeyutils1 libkrb5-3 libkrb5support0 libmnl0 libtirpc-common
+  libtirpc3t64 libxtables12
+Suggested packages:
+  python3:any krb5-doc krb5-user
+Recommended packages:
+  libpam-cap krb5-locales
+The following NEW packages will be installed:
+  iproute2 libbpf1 libcap2-bin libcom-err2 libelf1t64 libgssapi-krb5-2
+  libk5crypto3 libkeyutils1 libkrb5-3 libkrb5support0 libmnl0 libtirpc-common
+  libtirpc3t64 libxtables12
+The following packages will be upgraded:
+  libcap2
+1 upgraded, 14 newly installed, 0 to remove and 24 not upgraded.
+Need to get 2179 kB of archives.
+After this operation, 9265 kB of additional disk space will be used.
+Get:1 http://deb.debian.org/debian trixie/main arm64 libcap2 arm64 1:2.75-10+deb13u1+b3 [28.6 kB]
+Get:2 http://deb.debian.org/debian trixie/main arm64 libelf1t64 arm64 0.192-4 [189 kB]
+Get:3 http://deb.debian.org/debian trixie/main arm64 libbpf1 arm64 1:1.5.0-3 [159 kB]
+Get:4 http://deb.debian.org/debian trixie/main arm64 libmnl0 arm64 1.0.5-3 [11.9 kB]
+Get:5 http://deb.debian.org/debian trixie/main arm64 libkrb5support0 arm64 1.21.3-5+deb13u1 [32.5 kB]
+Get:6 http://deb.debian.org/debian trixie/main arm64 libcom-err2 arm64 1.47.2-3+b12 [24.9 kB]
+Get:7 http://deb.debian.org/debian trixie/main arm64 libk5crypto3 arm64 1.21.3-5+deb13u1 [81.4 kB]
+Get:8 http://deb.debian.org/debian trixie/main arm64 libkeyutils1 arm64 1.6.3-6 [9716 B]
+Get:9 http://deb.debian.org/debian trixie/main arm64 libkrb5-3 arm64 1.21.3-5+deb13u1 [308 kB]
+Get:10 http://deb.debian.org/debian trixie/main arm64 libgssapi-krb5-2 arm64 1.21.3-5+deb13u1 [128 kB]
+Get:11 http://deb.debian.org/debian trixie/main arm64 libtirpc-common all 1.3.6+ds-1 [11.0 kB]
+Get:12 http://deb.debian.org/debian trixie/main arm64 libtirpc3t64 arm64 1.3.6+ds-1 [79.1 kB]
+Get:13 http://deb.debian.org/debian trixie/main arm64 libxtables12 arm64 1.8.11-2 [30.6 kB]
+Get:14 http://deb.debian.org/debian trixie/main arm64 libcap2-bin arm64 1:2.75-10+deb13u1+b3 [35.6 kB]
+Get:15 http://deb.debian.org/debian trixie/main arm64 iproute2 arm64 6.15.0-1 [1050 kB]
+[91mdebconf: unable to initialize frontend: Dialog
+debconf: (TERM is not set, so the dialog frontend is not usable.)
+debconf: falling back to frontend: Readline
+[0m[91mdebconf: unable to initialize frontend: Readline
+debconf: (Can't locate Term/ReadLine.pm in @INC (you may need to install the Term::ReadLine module) (@INC entries checked: /etc/perl /usr/local/lib/aarch64-linux-gnu/perl/5.40.1 /usr/local/share/perl/5.40.1 /usr/lib/aarch64-linux-gnu/perl5/5.40 /usr/share/perl5 /usr/lib/aarch64-linux-gnu/perl-base /usr/lib/aarch64-linux-gnu/perl/5.40 /usr/share/perl/5.40 /usr/local/lib/site_perl) at /usr/share/perl5/Debconf/FrontEnd/Readline.pm line 8, <STDIN> line 15.)
+debconf: falling back to frontend: Teletype
+[0m[91mdebconf: unable to initialize frontend: Teletype
+debconf: (This frontend requires a controlling tty.)
+debconf: falling back to frontend: Noninteractive
+[0mPreconfiguring packages ...
+Fetched 2179 kB in 0s (4539 kB/s)
+(Reading database ... (Reading database ... 5%(Reading database ... 10%(Reading database ... 15%(Reading database ... 20%(Reading database ... 25%(Reading database ... 30%(Reading database ... 35%(Reading database ... 40%(Reading database ... 45%(Reading database ... 50%(Reading database ... 55%(Reading database ... 60%(Reading database ... 65%(Reading database ... 70%(Reading database ... 75%(Reading database ... 80%(Reading database ... 85%(Reading database ... 90%(Reading database ... 95%(Reading database ... 100%(Reading database ... 5642 files and directories currently installed.)
+Preparing to unpack .../libcap2_1%3a2.75-10+deb13u1+b3_arm64.deb ...
+Unpacking libcap2:arm64 (1:2.75-10+deb13u1+b3) over (1:2.75-10+deb13u1+b1) ...
+Setting up libcap2:arm64 (1:2.75-10+deb13u1+b3) ...
+Selecting previously unselected package libelf1t64:arm64.
+(Reading database ... (Reading database ... 5%(Reading database ... 10%(Reading database ... 15%(Reading database ... 20%(Reading database ... 25%(Reading database ... 30%(Reading database ... 35%(Reading database ... 40%(Reading database ... 45%(Reading database ... 50%(Reading database ... 55%(Reading database ... 60%(Reading database ... 65%(Reading database ... 70%(Reading database ... 75%(Reading database ... 80%(Reading database ... 85%(Reading database ... 90%(Reading database ... 95%(Reading database ... 100%(Reading database ... 5642 files and directories currently installed.)
+Preparing to unpack .../00-libelf1t64_0.192-4_arm64.deb ...
+Unpacking libelf1t64:arm64 (0.192-4) ...
+Selecting previously unselected package libbpf1:arm64.
+Preparing to unpack .../01-libbpf1_1%3a1.5.0-3_arm64.deb ...
+Unpacking libbpf1:arm64 (1:1.5.0-3) ...
+Selecting previously unselected package libmnl0:arm64.
+Preparing to unpack .../02-libmnl0_1.0.5-3_arm64.deb ...
+Unpacking libmnl0:arm64 (1.0.5-3) ...
+Selecting previously unselected package libkrb5support0:arm64.
+Preparing to unpack .../03-libkrb5support0_1.21.3-5+deb13u1_arm64.deb ...
+Unpacking libkrb5support0:arm64 (1.21.3-5+deb13u1) ...
+Selecting previously unselected package libcom-err2:arm64.
+Preparing to unpack .../04-libcom-err2_1.47.2-3+b12_arm64.deb ...
+Unpacking libcom-err2:arm64 (1.47.2-3+b12) ...
+Selecting previously unselected package libk5crypto3:arm64.
+Preparing to unpack .../05-libk5crypto3_1.21.3-5+deb13u1_arm64.deb ...
+Unpacking libk5crypto3:arm64 (1.21.3-5+deb13u1) ...
+Selecting previously unselected package libkeyutils1:arm64.
+Preparing to unpack .../06-libkeyutils1_1.6.3-6_arm64.deb ...
+Unpacking libkeyutils1:arm64 (1.6.3-6) ...
+Selecting previously unselected package libkrb5-3:arm64.
+Preparing to unpack .../07-libkrb5-3_1.21.3-5+deb13u1_arm64.deb ...
+Unpacking libkrb5-3:arm64 (1.21.3-5+deb13u1) ...
+Selecting previously unselected package libgssapi-krb5-2:arm64.
+Preparing to unpack .../08-libgssapi-krb5-2_1.21.3-5+deb13u1_arm64.deb ...
+Unpacking libgssapi-krb5-2:arm64 (1.21.3-5+deb13u1) ...
+Selecting previously unselected package libtirpc-common.
+Preparing to unpack .../09-libtirpc-common_1.3.6+ds-1_all.deb ...
+Unpacking libtirpc-common (1.3.6+ds-1) ...
+Selecting previously unselected package libtirpc3t64:arm64.
+Preparing to unpack .../10-libtirpc3t64_1.3.6+ds-1_arm64.deb ...
+Adding 'diversion of /lib/aarch64-linux-gnu/libtirpc.so.3 to /lib/aarch64-linux-gnu/libtirpc.so.3.usr-is-merged by libtirpc3t64'
+Adding 'diversion of /lib/aarch64-linux-gnu/libtirpc.so.3.0.0 to /lib/aarch64-linux-gnu/libtirpc.so.3.0.0.usr-is-merged by libtirpc3t64'
+Unpacking libtirpc3t64:arm64 (1.3.6+ds-1) ...
+Selecting previously unselected package libxtables12:arm64.
+Preparing to unpack .../11-libxtables12_1.8.11-2_arm64.deb ...
+Unpacking libxtables12:arm64 (1.8.11-2) ...
+Selecting previously unselected package libcap2-bin.
+Preparing to unpack .../12-libcap2-bin_1%3a2.75-10+deb13u1+b3_arm64.deb ...
+Unpacking libcap2-bin (1:2.75-10+deb13u1+b3) ...
+Selecting previously unselected package iproute2.
+Preparing to unpack .../13-iproute2_6.15.0-1_arm64.deb ...
+Unpacking iproute2 (6.15.0-1) ...
+Setting up libkeyutils1:arm64 (1.6.3-6) ...
+Setting up libtirpc-common (1.3.6+ds-1) ...
+Setting up libcom-err2:arm64 (1.47.2-3+b12) ...
+Setting up libelf1t64:arm64 (0.192-4) ...
+Setting up libkrb5support0:arm64 (1.21.3-5+deb13u1) ...
+Setting up libcap2-bin (1:2.75-10+deb13u1+b3) ...
+Setting up libmnl0:arm64 (1.0.5-3) ...
+Setting up libk5crypto3:arm64 (1.21.3-5+deb13u1) ...
+Setting up libxtables12:arm64 (1.8.11-2) ...
+Setting up libkrb5-3:arm64 (1.21.3-5+deb13u1) ...
+Setting up libbpf1:arm64 (1:1.5.0-3) ...
+Setting up libgssapi-krb5-2:arm64 (1.21.3-5+deb13u1) ...
+Setting up libtirpc3t64:arm64 (1.3.6+ds-1) ...
+Setting up iproute2 (6.15.0-1) ...
+debconf: unable to initialize frontend: Dialog
+debconf: (TERM is not set, so the dialog frontend is not usable.)
+debconf: falling back to frontend: Readline
+debconf: unable to initialize frontend: Readline
+debconf: (Can't locate Term/ReadLine.pm in @INC (you may need to install the Term::ReadLine module) (@INC entries checked: /etc/perl /usr/local/lib/aarch64-linux-gnu/perl/5.40.1 /usr/local/share/perl/5.40.1 /usr/lib/aarch64-linux-gnu/perl5/5.40 /usr/share/perl5 /usr/lib/aarch64-linux-gnu/perl-base /usr/lib/aarch64-linux-gnu/perl/5.40 /usr/share/perl/5.40 /usr/local/lib/site_perl) at /usr/share/perl5/Debconf/FrontEnd/Readline.pm line 8.)
+debconf: falling back to frontend: Teletype
+debconf: unable to initialize frontend: Teletype
+debconf: (This frontend requires a controlling tty.)
+debconf: falling back to frontend: Noninteractive
+Processing triggers for libc-bin (2.41-12+deb13u3) ...
+ ---> Removed intermediate container 4a9f681dcf97
+ ---> 34b6129027d1
+Step 4/13 : WORKDIR /srv/vitalwatch-fog
+ ---> Running in cbf07daaf9b3
+ ---> Removed intermediate container cbf07daaf9b3
+ ---> 8adc496ed7a1
+Step 5/13 : COPY requirements.txt .
+ ---> ed2a69577148
+Step 6/13 : RUN pip install --no-cache-dir -r requirements.txt
+ ---> Running in fde422b6ab51
+Collecting flask==3.0.3 (from -r requirements.txt (line 1))
+  Downloading flask-3.0.3-py3-none-any.whl.metadata (3.2 kB)
+Collecting gunicorn==23.0.0 (from -r requirements.txt (line 2))
+  Downloading gunicorn-23.0.0-py3-none-any.whl.metadata (4.4 kB)
+Collecting requests==2.32.3 (from -r requirements.txt (line 3))
+  Downloading requests-2.32.3-py3-none-any.whl.metadata (4.6 kB)
+Collecting Werkzeug>=3.0.0 (from flask==3.0.3->-r requirements.txt (line 1))
+  Downloading werkzeug-3.1.9-py3-none-any.whl.metadata (4.1 kB)
+Collecting Jinja2>=3.1.2 (from flask==3.0.3->-r requirements.txt (line 1))
+  Downloading jinja2-3.1.6-py3-none-any.whl.metadata (2.9 kB)
+Collecting itsdangerous>=2.1.2 (from flask==3.0.3->-r requirements.txt (line 1))
+  Downloading itsdangerous-2.2.0-py3-none-any.whl.metadata (1.9 kB)
+Collecting click>=8.1.3 (from flask==3.0.3->-r requirements.txt (line 1))
+  Downloading click-8.5.0-py3-none-any.whl.metadata (2.6 kB)
+Collecting blinker>=1.6.2 (from flask==3.0.3->-r requirements.txt (line 1))
+  Downloading blinker-1.9.0-py3-none-any.whl.metadata (1.6 kB)
+Collecting packaging (from gunicorn==23.0.0->-r requirements.txt (line 2))
+  Downloading packaging-26.3-py3-none-any.whl.metadata (3.5 kB)
+Collecting charset-normalizer<4,>=2 (from requests==2.32.3->-r requirements.txt (line 3))
+  Downloading charset_normalizer-3.5.2-cp312-cp312-manylinux2014_aarch64.manylinux_2_17_aarch64.manylinux_2_28_aarch64.whl.metadata (46 kB)
+Collecting idna<4,>=2.5 (from requests==2.32.3->-r requirements.txt (line 3))
+  Downloading idna-3.20-py3-none-any.whl.metadata (7.2 kB)
+Collecting urllib3<3,>=1.21.1 (from requests==2.32.3->-r requirements.txt (line 3))
+  Downloading urllib3-2.8.0-py3-none-any.whl.metadata (7.4 kB)
+Collecting certifi>=2017.4.17 (from requests==2.32.3->-r requirements.txt (line 3))
+  Downloading certifi-2026.10.18-py3-none-any.whl.metadata (2.5 kB)
+Collecting MarkupSafe>=2.0 (from Jinja2>=3.1.2->flask==3.0.3->-r requirements.txt (line 1))
+  Downloading markupsafe-3.0.4-cp312-cp312-manylinux2014_aarch64.manylinux_2_17_aarch64.manylinux_2_28_aarch64.whl.metadata (2.7 kB)
+Downloading flask-3.0.3-py3-none-any.whl (101 kB)
+Downloading gunicorn-23.0.0-py3-none-any.whl (85 kB)
+Downloading requests-2.32.3-py3-none-any.whl (64 kB)
+Downloading blinker-1.9.0-py3-none-any.whl (8.5 kB)
+Downloading certifi-2026.10.18-py3-none-any.whl (134 kB)
+Downloading charset_normalizer-3.5.2-cp312-cp312-manylinux2014_aarch64.manylinux_2_17_aarch64.manylinux_2_28_aarch64.whl (246 kB)
+Downloading click-8.5.0-py3-none-any.whl (125 kB)
+Downloading idna-3.20-py3-none-any.whl (69 kB)
+Downloading itsdangerous-2.2.0-py3-none-any.whl (16 kB)
+Downloading jinja2-3.1.6-py3-none-any.whl (134 kB)
+Downloading urllib3-2.8.0-py3-none-any.whl (135 kB)
+Downloading werkzeug-3.1.9-py3-none-any.whl (228 kB)
+Downloading packaging-26.3-py3-none-any.whl (129 kB)
+Downloading markupsafe-3.0.4-cp312-cp312-manylinux2014_aarch64.manylinux_2_17_aarch64.manylinux_2_28_aarch64.whl (24 kB)
+Installing collected packages: urllib3, packaging, MarkupSafe, itsdangerous, idna, click, charset-normalizer, certifi, blinker, Werkzeug, requests, Jinja2, gunicorn, flask
+Successfully installed Jinja2-3.1.6 MarkupSafe-3.0.4 Werkzeug-3.1.9 blinker-1.9.0 certifi-2026.10.18 charset-normalizer-3.5.2 click-8.5.0 flask-3.0.3 gunicorn-23.0.0 idna-3.20 itsdangerous-2.2.0 packaging-26.3 requests-2.32.3 urllib3-2.8.0
+[91mWARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager, possibly rendering your system unusable. It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv. Use the --root-user-action option if you know what you are doing and want to suppress this warning.
+[0m[91m
+[notice] A new release of pip is available: 25.0.1 -> 26.2.1
+[notice] To update, run: pip install --upgrade pip
+[0m ---> Removed intermediate container fde422b6ab51
+ ---> 0b1895ff47ae
+Step 7/13 : COPY fogsim ./fogsim
+ ---> f7d1d0645a51
+Step 8/13 : COPY testbed ./testbed
+ ---> e79f691f7484
+Step 9/13 : RUN useradd --create-home vitalwatch
+ ---> Running in 55c76a957c1b
+ ---> Removed intermediate container 55c76a957c1b
+ ---> d0cf6edba5ab
+Step 10/13 : USER vitalwatch
+ ---> Running in b435d761933c
+ ---> Removed intermediate container b435d761933c
+ ---> 02e3ca35c202
+Step 11/13 : EXPOSE 8000
+ ---> Running in a1b193b337b3
+ ---> Removed intermediate container a1b193b337b3
+ ---> 46d35195fe9a
+Step 12/13 : HEALTHCHECK --interval=30s --timeout=5s --retries=3   CMD python -c "import urllib.request,sys;       sys.exit(0 if urllib.request.urlopen('http://localhost:8000/health').status==200 else 1)"
+ ---> Running in d3dbc75fbc5c
+ ---> Removed intermediate container d3dbc75fbc5c
+ ---> c69c9048283e
+Step 13/13 : ENTRYPOINT ["testbed/entrypoint.sh"]
+ ---> Running in c67416ff8cc5
+ ---> Removed intermediate container c67416ff8cc5
+ ---> 036b86c9d6ee
+Successfully built 036b86c9d6ee
+Successfully tagged shakthe1311/vitalwatch-fog:v1
+Successfully tagged shakthe1311/vitalwatch-fog:latest

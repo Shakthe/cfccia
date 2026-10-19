@@ -1,0 +1,7 @@
+NAME               IMAGE                           STATUS
+cia2-cloud-1       shakthe1311/vitalwatch-fog:v1   Up 9 minutes (healthy)
+cia2-cloud-wan-1   shakthe1311/vitalwatch-fog:v1   Up 9 minutes
+cia2-fog-1-1       shakthe1311/vitalwatch-fog:v1   Up 9 minutes (healthy)
+cia2-fog-2-1       shakthe1311/vitalwatch-fog:v1   Up 9 minutes (healthy)
+cia2-fog-3-1       shakthe1311/vitalwatch-fog:v1   Up 9 minutes (healthy)
+cia2-gateway-1     shakthe1311/vitalwatch-fog:v1   Up 9 minutes (healthy)

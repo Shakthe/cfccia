@@ -1,0 +1,274 @@
+<!doctype html><html><head><meta charset="utf-8"><title>CS4001 CIA-2 Question 2</title>
+<style>
+  @page { size: A4; margin: 18mm 16mm; }
+  body { font-family: Georgia, 'Times New Roman', serif; color: #1a1a1a; font-size: 11.5pt; line-height: 1.55; margin: 0; }
+  h1 { font-size: 20pt; line-height: 1.3; }
+  h2 { font-size: 15pt; color: #0b5394; border-bottom: 2px solid #0b5394; padding-bottom: 4px; margin-top: 1.6em; }
+  h3 { font-size: 12.5pt; margin-bottom: .3em; }
+  .titlepage { text-align: center; padding-top: 220px; page-break-after: always; }
+  .titlepage .course { font-size: 17pt; font-weight: bold; }
+  .titlepage .q { font-size: 15pt; font-weight: bold; margin-top: 40px; }
+  .titlepage .links { margin-top: 60px; font-size: 12pt; line-height: 2; }
+  .titlepage .sub { margin-top: 80px; font-size: 12.5pt; }
+  table { border-collapse: collapse; width: 100%; margin: .8em 0; font-size: 10.5pt; }
+  th, td { border: 1px solid #9db4c8; padding: 6px 9px; text-align: left; vertical-align: top; }
+  th { background: #0b5394; color: #fff; }
+  tr:nth-child(even) td { background: #f2f6fa; }
+  pre.term { background: #1e2430; color: #d8e0ea; font-family: Menlo, Consolas, monospace; font-size: 8.6pt; line-height: 1.45; padding: 12px 14px; border-radius: 8px; overflow-x: hidden; white-space: pre-wrap; word-break: break-word; }
+  pre.code { background: #f4f6f8; border: 1px solid #d4dde6; color: #1a1a1a; font-family: Menlo, Consolas, monospace; font-size: 8.8pt; line-height: 1.45; padding: 12px 14px; border-radius: 8px; white-space: pre-wrap; }
+  .figcap { font-size: 9.5pt; color: #444; font-style: italic; text-align: center; margin: 4px 0 1.2em; }
+  img.fig { max-width: 100%; display: block; margin: 0 auto; border: 1px solid #ccd7e0; }
+  .nobreak { page-break-inside: avoid; }
+  ul { margin-top: .3em; }
+  li { margin-bottom: .35em; }
+  code { font-family: Menlo, Consolas, monospace; font-size: 9.5pt; background: #eef2f6; padding: 1px 4px; border-radius: 3px; }
+  .pb { page-break-before: always; }
+</style>
+</head><body>
+<div class="titlepage">
+  <div class="course">Cloud and Fog Computing for IoT<br>(CS4001)</div>
+  <div class="q">CIA-2<br><br>Question 2: Latency-Aware Task Scheduling and Load Balancing in Fog Computing</div>
+  <div class="links">
+    Docker image: <b>https://hub.docker.com/r/shakthe1311/vitalwatch-fog</b> (v1, latest)<br>
+    GitHub repo link: <b>https://github.com/Shakthe/cfccia</b> (folder <b>cia2/</b>)
+  </div>
+  <div class="sub">Submitted by <b>Shakthevell M &nbsp; 23011102092 &nbsp; IoT-B</b></div>
+</div>
+
+<h2>1. Introduction</h2>
+<p>In CIA-1 I built <b>VitalWatch</b>, a cloud system that checks a patient's vital signs and sends an alert back to their wearable. Everything there went to the cloud. That works, but every reading has to travel over the internet and back, and in a hospital with many patients the internet link becomes the slow point. For a heart-rate or SpO2 alert, a delay of a few hundred milliseconds is too much.</p>
+<p>For CIA-2 I moved VitalWatch to a <b>fog</b> design. Small computers inside the hospital (one per ward, plus one hospital server) do the urgent work close to the patient, and only the heavy work goes to the cloud. The hard part is deciding <i>where each task should run</i>. So the main work of this assignment is a scheduler I call <b>LAPS (Latency-Aware Priority Scheduler)</b>. For every task it looks at priority, deadline, expected latency, CPU load, network bandwidth and energy, and then picks the local fog node, another fog node, or the cloud.</p>
+<p>I tested LAPS in two ways:</p>
+<ul>
+<li>A <b>simulator</b> I wrote in Python. It runs a hospital of 50 to 300 patients and compares LAPS with four common methods: FCFS, Round Robin, Min-Min and cloud-only. Each setting runs 5 times with different random seeds.</li>
+<li>A <b>live testbed</b> in Docker: three fog-node containers of different sizes, a cloud container behind a real 70 ms network delay, and the scheduler gateway, with simulated wearables sending real tasks.</li>
+</ul>
+<p>The tasks come in three types:</p>
+<table>
+<tr><th>Task type</th><th>Priority</th><th>Size (MI)</th><th>Data</th><th>Deadline</th><th>How often (per patient)</th></tr>
+<tr><td>Critical vitals check (HR, SpO2, BP, temp)</td><td>P1</td><td>30 &ndash; 70</td><td>1 &ndash; 2 KB</td><td>100 ms</td><td>every 1 s</td></tr>
+<tr><td>ECG window analysis (10 s of ECG)</td><td>P2</td><td>300 &ndash; 700</td><td>10 &ndash; 20 KB</td><td>1 s</td><td>every 10 s</td></tr>
+<tr><td>Bulk job (24 h trend, risk model, report)</td><td>P3</td><td>4000 &ndash; 12000</td><td>200 &ndash; 400 KB</td><td>10 s</td><td>every 5 min</td></tr>
+</table>
+
+<h2 class="pb">2. Literature Survey</h2>
+<p>I read 13 papers on fog task scheduling, load balancing, latency-aware computing and resource allocation. For some of them I could only get the abstract, so the table below only lists what each paper actually reports.</p>
+<table style="font-size:8.6pt">
+<tr><th>#</th><th>Paper</th><th>Algorithm / approach</th><th>Simulation / dataset</th><th>Metrics</th><th>Result</th><th>Limitation</th></tr>
+<tr><td>1</td><td>Gupta et al., 2017 [1]</td><td>iFogSim toolkit; edge-ward module placement vs cloud-only</td><td>iFogSim (EEG game, camera surveillance)</td><td>latency, network use, energy, cost</td><td>edge-ward gave lower latency and much lower network use than cloud-only</td><td>static placement; no priority, deadlines or load balancing between fog nodes</td></tr>
+<tr><td>2</td><td>Mahmud et al., 2019 [2]</td><td>latency-aware placement of application modules</td><td>iFogSim</td><td>deadline satisfaction, resource use</td><td>better than other latency-aware strategies (no figure given in abstract)</td><td>module placement, not per-task scheduling; energy and priority not covered</td></tr>
+<tr><td>3</td><td>Bitam et al., 2018 [3]</td><td>Bees Life Algorithm (metaheuristic)</td><td>own experiments</td><td>CPU execution time, memory</td><td>beat PSO and GA</td><td>ignores network latency, deadlines, energy and cloud offload</td></tr>
+<tr><td>4</td><td>Pham &amp; Huh, 2016 [4]</td><td>heuristic for cloud-fog scheduling</td><td>numerical study</td><td>makespan, cloud cost</td><td>better makespan-cost trade-off</td><td>no deadlines, priority or energy</td></tr>
+<tr><td>5</td><td>Deng et al., 2016 [5]</td><td>optimisation: split workload between fog and cloud</td><td>numerical simulation</td><td>power, delay, bandwidth</td><td>fog cuts delay and bandwidth use</td><td>works on total workload, not each task; no priority</td></tr>
+<tr><td>6</td><td>Jamil et al., 2020 [6]</td><td>delay-aware fog job scheduler</td><td>iFogSim</td><td>delay, network usage</td><td>32% lower delay and 16% lower network use than FCFS</td><td>only FCFS as baseline; no cloud spill or priority classes reported</td></tr>
+<tr><td>7</td><td>Aladwani, 2019 [7]</td><td>TCVC: tasks put into 3 importance classes by patient status, on top of MAX-MIN</td><td>CloudSim</td><td>execution, waiting and finish time</td><td>improves static scheduling</td><td>static; no live load, bandwidth, energy or cloud offload</td></tr>
+<tr><td>8</td><td>Khattak et al., 2019 [8]</td><td>rule-based: forward to a nearby fog server when overloaded; critical data to cloud</td><td>15,000 jobs, 10 fog devices (iFogSim-style)</td><td>processing time, power, response time</td><td>trends shown in figures</td><td>no baseline comparison; binary criticality; no deadlines</td></tr>
+<tr><td>9</td><td>Talaat et al., 2020 [9]</td><td>LBOS: reinforcement learning + genetic algorithm load balancing</td><td>healthcare IoT-fog-cloud system</td><td>allocation cost, response time, balance level</td><td>best load-balancing level, 85.71%</td><td>no priority classes, deadlines or energy mentioned</td></tr>
+<tr><td>10</td><td>Tuli et al., 2020 [10]</td><td>HealthFog: deep-learning diagnosis on FogBus; least-loaded worker, else cloud</td><td>real Raspberry Pi testbed, Cleveland heart dataset</td><td>accuracy, latency, power, bandwidth</td><td>ensemble raised accuracy by 16%</td><td>scheduling only uses a load threshold</td></tr>
+<tr><td>11</td><td>Hussein &amp; Mousa, 2020 [11]</td><td>ant colony and particle swarm task offloading</td><td>MATLAB, 200&ndash;2000 sensors, 8&ndash;20 fog nodes</td><td>response time, degree of imbalance</td><td>ACO beat PSO and Round Robin</td><td>energy not in objective; static scenarios; no priority</td></tr>
+<tr><td>12</td><td>Hoang &amp; Dang, 2017 [12]</td><td>FBRC: integer program + heuristic over fog regions and cloud</td><td>custom numerical simulation</td><td>completion / response time</td><td>beat region-only and cloud-only</td><td>no energy or priority; node state assumed known</td></tr>
+<tr><td>13</td><td>Abdelmoneem et al., 2020 [13]</td><td>MobMBAR: ranks tasks by critical level and max response time, with mobility handoff</td><td>simulated hospital building</td><td>makespan, energy, missed tasks</td><td>88% lower makespan, 92% lower energy</td><td>live CPU load and bandwidth not mentioned in abstract</td></tr>
+</table>
+<h3>What I learnt and the research gap</h3>
+<ul>
+<li>Healthcare priority is used in a few papers, but only as fixed classes [7], a single heart-rate threshold [8], or a ranking for makespan [13].</li>
+<li>Load balancing is often one simple threshold ([8], [10]) or a heavy optimiser such as ACO, RL or bees ([3], [9], [11]) that leaves energy or deadlines out.</li>
+<li>The delay-energy trade-off is studied for the total workload [5], not task by task.</li>
+<li>Many papers compare only against FCFS or cloud-only, and few show what happens as the number of patients grows.</li>
+</ul>
+<p><b>Gap:</b> none of these papers makes one per-task decision that uses priority, deadline, live CPU load, link bandwidth and energy together, spills to a nearby fog node before going to the cloud, and is tested across growing healthcare load against several baselines. LAPS is my attempt at exactly that.</p>
+
+<h2 class="pb">3. System Architecture</h2>
+<div class="nobreak">
+<img class="fig" src="figures/fig_architecture.png" alt="architecture">
+<p class="figcap">Figure 3.1 &mdash; VitalWatch-Fog architecture: wearables, fog nodes with task queues, the LAPS scheduler and load balancer, and the AWS cloud</p>
+</div>
+<table>
+<tr><th>Layer</th><th>What is there</th><th>What it does</th></tr>
+<tr><td>1 &mdash; IoT</td><td>Wearables in three wards</td><td>Send vitals every second, ECG windows every 10 s and data for bulk jobs every 5 minutes, over Wi-Fi to their ward gateway</td></tr>
+<tr><td>2 &mdash; Fog</td><td>fog-1 (Pi 4 class), fog-2 (Jetson class), fog-3 (NUC class), each with a priority task queue</td><td>The ward gateway runs LAPS and picks a node. Each node runs P1 tasks first, then P2, then P3; inside one class the earliest deadline goes first. Busy nodes pass work to a peer fog node over the 100 Mbps LAN</td></tr>
+<tr><td>3 &mdash; Cloud</td><td>AWS VM pool (EKS/EC2) and storage</td><td>Runs the heavy jobs and any ECG work the fog cannot fit; keeps patient history. Reached over a 10 Mbps uplink with about 70 ms round trip</td></tr>
+</table>
+
+<h2>4. Scheduling Parameters</h2>
+<table>
+<tr><th>Parameter</th><th>How I measure it</th><th>How LAPS uses it</th></tr>
+<tr><td>Latency</td><td>estimated response = time already spent + max(transfer, queue wait) + run time + return time</td><td>nodes that would miss 90% of the deadline are dropped; the rest pay a latency cost</td></tr>
+<tr><td>Task priority</td><td>P1 critical, P2 ECG, P3 bulk</td><td>sets the queue order and the weights</td></tr>
+<tr><td>CPU utilisation</td><td>busy cores &divide; total cores on each node</td><td>load term in the cost; core reservation</td></tr>
+<tr><td>Network bandwidth</td><td>bits already waiting on the link &divide; link speed (Wi-Fi 50, LAN 100, WAN 10 Mbps)</td><td>part of the transfer time, so a busy uplink makes the cloud look slower</td></tr>
+<tr><td>Deadline</td><td>100 ms / 1 s / 10 s</td><td>hard filter, and earliest-deadline order inside a queue</td></tr>
+<tr><td>Energy</td><td>run time &times; watts per core + bits &times; energy per bit of each link</td><td>energy term in the cost</td></tr>
+</table>
+<p>The queue wait is worked out by spreading the work already ahead of the task over the node's cores as they become free. A running task always counts, because tasks are never stopped half-way.</p>
+
+<h2>5. The LAPS Algorithm</h2>
+<pre class="code">for each new task t at its ward gateway:
+    for each node n in {fog-1, fog-2, fog-3, cloud}:
+        R(n) = elapsed + max(transfer(n), wait(n)) + run(n) + return(n)
+        E(n) = run(n) x watts(n) + bits x energy_per_bit(path)
+        U(n) = busy cores / cores
+    keep n only if  R(n) &lt;= 0.9 x deadline
+                and (n is cloud or core reservation allows t)
+    if nothing is left:
+        P1 -> node with the smallest R(n);  P2/P3 -> cloud
+    else:
+        cost(n) = wL x R(n)/deadline + wE x E(n)/max E + wU x U(n)
+        send t to the node with the lowest cost</pre>
+<table>
+<tr><th>Priority</th><th>wL (latency)</th><th>wE (energy)</th><th>wU (load)</th><th>Core reservation on a fog node</th></tr>
+<tr><td>P1 critical</td><td>0.5</td><td>0.3</td><td>0.2</td><td>may use every core</td></tr>
+<tr><td>P2 ECG</td><td>0.4</td><td>0.35</td><td>0.25</td><td>ECG + bulk together at most 75% of cores</td></tr>
+<tr><td>P3 bulk</td><td>0.2</td><td>0.4</td><td>0.4</td><td>bulk at most 50% of cores</td></tr>
+</table>
+<p>The reservation is the load-balancing part I care about most. A 10-second bulk job on a Pi can block a core for 8 seconds. If all cores fill up with such jobs, a critical alert has to wait. Keeping some cores free for urgent work, and sending the overflow to a peer fog node or the cloud, avoids that.</p>
+
+<h2 class="pb">6. Implementation and Setup</h2>
+<p>All code is in the <code>cia2/</code> folder of the repo:</p>
+<ul>
+<li><code>fogsim/</code> has the simulator. <code>policies.py</code> holds LAPS and the four baselines, and the same code is used by the live gateway.</li>
+<li><code>testbed/</code> has the fog node, gateway and wearable programs.</li>
+<li><code>docker-compose.yml</code> starts the testbed.</li>
+</ul>
+<h3>6.1 Simulator</h3>
+<p>The simulator is a discrete-event simulator. Each patient sends tasks as random (Poisson) arrivals at the rates in Section 1. Links are shared queues with a speed and a delay, and nodes have cores and a queue. Each run covers 300 s; I ignore the first 30 s while the system warms up. Every setting ran with 5 seeds, 225 runs in total.</p>
+<table>
+<tr><th>Node</th><th>Cores &times; MIPS</th><th>Extra watts per busy core</th></tr>
+<tr><td>fog-1 Ward A gateway (Raspberry Pi 4 class)</td><td>4 &times; 1000</td><td>0.93 W</td></tr>
+<tr><td>fog-2 ICU gateway (Jetson Nano class)</td><td>4 &times; 1400</td><td>2.0 W</td></tr>
+<tr><td>fog-3 hospital fog server (Intel NUC class)</td><td>4 &times; 3000</td><td>8.75 W</td></tr>
+<tr><td>Cloud VM pool</td><td>16 &times; 4000</td><td>12 W (8 W &times; PUE 1.5)</td></tr>
+</table>
+<p>The four baselines:</p>
+<ul>
+<li><b>FCFS:</b> every task runs on its own ward gateway, in arrival order.</li>
+<li><b>Round Robin:</b> tasks go to fog-1, fog-2, fog-3 and the cloud in turn.</li>
+<li><b>Min-Min (MCT):</b> the online form of Min-Min, picking the node with the earliest completion time, with FIFO queues.</li>
+<li><b>Cloud only:</b> everything goes to the cloud.</li>
+</ul>
+<h3>6.2 Live Docker testbed</h3>
+<p>I packed everything into one image, <code>shakthe1311/vitalwatch-fog:v1</code>. The <code>ROLE</code> variable picks node, gateway, wearables or sim.</p>
+<ul>
+<li>Every task burns real CPU (SHA-256 rounds) in proportion to its size.</li>
+<li>Compose gives the fog containers different CPU shares (0.6, 1.0 and 2.0 CPUs), so fog-1 really is slower. Each node times itself when it starts.</li>
+<li>A small sidecar uses Linux <code>tc netem</code> to put 70 ms &plusmn; 10 ms of delay on the cloud container's network, like a real WAN.</li>
+</ul>
+<pre class="term">$ docker build -t shakthe1311/vitalwatch-fog:v1 -t shakthe1311/vitalwatch-fog:latest .
+...
+Step 12/13 : HEALTHCHECK --interval=30s --timeout=5s --retries=3   CMD python -c "import urllib..."
+Step 13/13 : ENTRYPOINT ["testbed/entrypoint.sh"]
+Successfully built 036b86c9d6ee
+Successfully tagged shakthe1311/vitalwatch-fog:v1
+Successfully tagged shakthe1311/vitalwatch-fog:latest
+
+$ docker compose up -d
+$ docker compose ps
+NAME               IMAGE                           STATUS
+cia2-cloud-1       shakthe1311/vitalwatch-fog:v1   Up 9 minutes (healthy)
+cia2-cloud-wan-1   shakthe1311/vitalwatch-fog:v1   Up 9 minutes
+cia2-fog-1-1       shakthe1311/vitalwatch-fog:v1   Up 9 minutes (healthy)
+cia2-fog-2-1       shakthe1311/vitalwatch-fog:v1   Up 9 minutes (healthy)
+cia2-fog-3-1       shakthe1311/vitalwatch-fog:v1   Up 9 minutes (healthy)
+cia2-gateway-1     shakthe1311/vitalwatch-fog:v1   Up 9 minutes (healthy)
+
+$ docker compose logs | grep ready
+fog-1-1   | fog-1 ready: 2 cores, 619 MIPS per core
+fog-2-1   | fog-2 ready: 2 cores, 1581 MIPS per core
+fog-3-1   | fog-3 ready: 3 cores, 2403 MIPS per core
+cloud-1   | cloud ready: 4 cores, 2503 MIPS per core
+cloud-wan-1 | qdisc netem 8004: root refcnt 11 limit 1000 delay 70ms  10ms
+
+$ docker compose exec gateway python -c "...ping /health 5 times..."
+http://cloud:8000/health [150.3, 73.3, 72.0, 74.1, 76.8]   (ms)
+http://fog-3:8000/health [4.4, 1.7, 1.3, 1.0, 0.9]        (ms)</pre>
+<p class="figcap">Figure 6.1 &mdash; building the image, starting the testbed, each node's self-measured speed, and the emulated WAN delay to the cloud</p>
+<p>Then I started 60 patients' wearables for 45 s with <code>docker compose run --rm wearables --patients 60 --duration 45</code> and opened the gateway dashboard:</p>
+<div class="nobreak">
+<img class="fig" src="figures/dashboard.png" alt="dashboard">
+<p class="figcap">Figure 6.2 &mdash; live gateway dashboard under load: node CPU use, queues, share of tasks, deadline results per task type and the latest tasks</p>
+</div>
+<p>Over this live run 3012 tasks were measured. All 284 ECG tasks and all 8 bulk jobs met their deadlines. 80.3% of the 2720 critical checks met 100 ms (average 61.6 ms). LAPS put 63.5% of tasks on fog-3, 35.3% on fog-2 and 1.2% on the cloud. It sent nothing to fog-1: at 619 MIPS per core a critical check alone takes about 80 ms there, so it could not safely meet the deadline. The live result is lower than the simulator's because a laptop adds costs the simulator does not have: HTTP and Python overhead on every task, and Docker CPU limits that slow a container down in bursts. I still think the testbed is useful. It shows the same code making the same kind of choices on real containers with a real network delay.</p>
+
+<h2 class="pb">7. Results Under Varying Workloads</h2>
+<p>All graphs below come from the simulator, as the average of 5 seeds, with 50 to 300 patients.</p>
+<div class="nobreak"><img class="fig" src="../results/figures/g1_critical_met.png"><p class="figcap">Figure 7.1 &mdash; critical tasks that met the 100 ms deadline</p></div>
+<p>This is the most important graph. LAPS stays at 98.4% or above all the way to 300 patients. Min-Min is close until 200 patients and then drops to 79.3%. With FIFO queues, a critical task waits behind long ECG and bulk jobs. FCFS falls apart once the Pi gateway in Ward A is full (around 100&ndash;150 patients), and Round Robin fails for the same reason, since it keeps sending a quarter of all work to the slowest node. Cloud-only is bad even at 50 patients (59.8%), because a 70 ms round trip plus queueing on the uplink leaves almost no room inside 100 ms.</p>
+<div class="nobreak"><img class="fig" src="../results/figures/g2_critical_p95.png"><p class="figcap">Figure 7.2 &mdash; 95th percentile response time of critical tasks (log scale)</p></div>
+<div class="nobreak"><img class="fig" src="../results/figures/g3_avg_response.png"><p class="figcap">Figure 7.3 &mdash; average response time of all tasks (log scale)</p></div>
+<p>At 300 patients, 95% of LAPS critical tasks finish within 85.5 ms. For Min-Min the figure is 182.7 ms and for cloud-only 2014 ms. FCFS and Round Robin queues grow without limit, so their averages reach tens of seconds.</p>
+<div class="nobreak"><img class="fig" src="../results/figures/g4_energy.png"><p class="figcap">Figure 7.4 &mdash; energy per task</p></div>
+<p>At light load LAPS uses the least energy of all five (216 mJ per task at 50 patients, against 336 mJ for Min-Min and 356 mJ for cloud-only). It keeps work on the small, efficient fog boards while they have room. At 300 patients it is level with Min-Min (300 vs 302 mJ). FCFS looks cheaper at high load only because it never uses the cloud, and it misses almost every deadline.</p>
+<div class="nobreak"><img class="fig" src="../results/figures/g5_wan.png"><p class="figcap">Figure 7.5 &mdash; use of the 10 Mbps hospital uplink</p></div>
+<div class="nobreak"><img class="fig" src="../results/figures/g6_imbalance.png"><p class="figcap">Figure 7.6 &mdash; load imbalance between the three fog nodes (standard deviation of CPU use)</p></div>
+<div class="nobreak"><img class="fig" src="../results/figures/g7_node_util.png"><p class="figcap">Figure 7.7 &mdash; CPU use of each fog node at 200 patients</p></div>
+<p>Cloud-only fills 95.8% of the uplink at 300 patients. LAPS needs 44.9%, mostly for bulk jobs, which leaves room for other hospital traffic. Min-Min piles work onto the fast NUC: at 150 patients the imbalance is 32.7 points against 13.1 for LAPS. LAPS spreads the load because the CPU-load term pushes tasks away from a busy node.</p>
+
+<h3>Emergency burst</h3>
+<p>To test a sudden change in load, I ran 150 patients and, between 120 s and 180 s, made 20% of them "emergency" patients. They send vitals five times as often and ECG ten times as often.</p>
+<div class="nobreak"><img class="fig" src="../results/figures/g8_burst.png"><p class="figcap">Figure 7.8 &mdash; average critical response time in 5-second steps during the burst</p></div>
+<p>LAPS rises only slightly, stays far below 100 ms, and meets 99.9% of critical deadlines over the run. Min-Min gets close to the deadline line during the burst (94.9% met). Cloud-only spikes to almost a second, and FCFS and Round Robin never recover after the burst ends.</p>
+
+<h3>Which part of LAPS matters? (300 patients)</h3>
+<table>
+<tr><th>Version</th><th>Critical deadline met</th><th>Critical p95</th><th>Energy per task</th></tr>
+<tr><td>LAPS (full)</td><td>98.4%</td><td>85.5 ms</td><td>300 mJ</td></tr>
+<tr><td>without the energy term</td><td>99.4%</td><td>68.4 ms</td><td>314 mJ</td></tr>
+<tr><td>without core reservation</td><td>97.9%</td><td>88.2 ms</td><td>301 mJ</td></tr>
+<tr><td>FIFO queues instead of priority queues</td><td>94.3%</td><td>103.4 ms</td><td>301 mJ</td></tr>
+</table>
+<p>The priority queue gives the largest gain. The core reservation adds a little at this load. The energy term costs about one point of critical deadlines at 300 patients but saves about 4.6% energy, which brings me to the trade-off.</p>
+<div class="nobreak"><img class="fig" src="../results/figures/g9_tradeoff.png"><p class="figcap">Figure 7.9 &mdash; changing the energy weight for critical tasks: energy against latency (dashed line = the value I chose)</p></div>
+<p>Raising the energy weight from 0.1 to 0.6 cuts energy per task at 50 patients from 266 mJ to 148 mJ, but the critical p95 rises from 33 ms to 75 ms. All of these settings still meet the deadline at light load, so the weight is a real knob between battery and power use on one side and safety margin on the other. I chose 0.3: it saves a good amount of energy and keeps the p95 well under 100 ms even at 300 patients.</p>
+
+<h2 class="pb">8. Comparison and Justification</h2>
+<table>
+<tr><th>Method</th><th>Critical met at 50 / 300 patients</th><th>Main problem</th></tr>
+<tr><td>FCFS (local)</td><td>99.1% / 0%</td><td>no offloading; the slowest gateway overloads first</td></tr>
+<tr><td>Round Robin</td><td>90.5% / 32.3%</td><td>ignores node speed, load and the deadline</td></tr>
+<tr><td>Min-Min (MCT)</td><td>100% / 79.3%</td><td>FIFO queues: urgent tasks wait behind long jobs; overloads the fastest node</td></tr>
+<tr><td>Cloud only</td><td>59.8% / 4.6%</td><td>WAN round trip and a full uplink</td></tr>
+<tr><td><b>LAPS</b></td><td><b>100% / 98.4%</b></td><td>a bit more energy than FCFS at high load (but FCFS misses its deadlines)</td></tr>
+</table>
+<p>Why I think this design suits a hospital:</p>
+<ul>
+<li><b>Urgent work stays near the patient.</b> Critical checks almost never go to the cloud, so a slow or broken internet link does not stop alerts.</li>
+<li><b>Heavy work goes where it is cheap.</b> When the fog is quiet, bulk jobs run on the efficient boards. When it is busy, they move to the cloud, where a 10 s deadline is easy to meet.</li>
+<li><b>It is simple.</b> One decision costs a few arithmetic steps per node, unlike ACO, GA or RL schedulers that must be trained or iterated. It fits on a Raspberry Pi gateway.</li>
+<li><b>It uses all six parameters the question asks for</b>, in one decision for every task.</li>
+</ul>
+<h3>Limitations</h3>
+<ul>
+<li>The main comparison is from my own simulator. The node speeds, power figures and energy per bit are assumptions taken from typical device specs, not measured on real hardware.</li>
+<li>The simulator assumes each gateway knows the current state of all nodes. In the testbed this comes from the gateway's own records, and its estimates were less accurate (80.3% live vs 99.9% simulated at a similar load).</li>
+<li>Tasks are never stopped once started (no pre-emption), and patients do not move between wards.</li>
+<li>I tried the baselines on the testbed too. At 60 patients they overloaded the load generator's and nodes' thread pools, so their numbers measured my test tool rather than the schedulers. I left them out of this report.</li>
+</ul>
+
+<h2>9. Conclusion and Future Work</h2>
+<p>I extended VitalWatch from a cloud-only system into a three-layer fog system and designed LAPS, a latency-aware scheduler with load balancing. LAPS decides every task using its priority, deadline, estimated latency, CPU load, link bandwidth and energy. In 225 simulation runs it kept critical alerts within 100 ms for 98.4&ndash;100% of tasks from 50 to 300 patients. Under the same load the best conventional method (Min-Min) dropped to 79.3% and cloud-only to 4.6%. LAPS used the least energy at light load, needed less than half of the uplink, and handled an emergency burst with almost no change. The same scheduler code also runs on a live Docker testbed with real CPU work and real network delay.</p>
+<p>Future work:</p>
+<ul>
+<li>Make the weights change on their own: more energy saving when the fog is quiet, more latency focus when it is busy.</li>
+<li>Add pre-emption so a critical check can pause a bulk job.</li>
+<li>Support patients moving between wards (task hand-off between fog nodes).</li>
+<li>Share node state with a small gossip protocol so the estimates stay fresh.</li>
+<li>Run the fog layer on real Raspberry Pi and Jetson boards with K3s.</li>
+</ul>
+
+<h2 class="pb">References</h2>
+<ol style="font-size:10pt">
+<li>H. Gupta, A. V. Dastjerdi, S. K. Ghosh, and R. Buyya, "iFogSim: A toolkit for modeling and simulation of resource management techniques in the Internet of Things, Edge and Fog computing environments," <i>Software: Practice and Experience</i>, vol. 47, no. 9, pp. 1275&ndash;1296, 2017, doi: 10.1002/spe.2509.</li>
+<li>R. Mahmud, K. Ramamohanarao, and R. Buyya, "Latency-aware application module management for fog computing environments," <i>ACM Trans. Internet Technology</i>, vol. 19, no. 1, pp. 1&ndash;21, 2019, doi: 10.1145/3186592.</li>
+<li>S. Bitam, S. Zeadally, and A. Mellouk, "Fog computing job scheduling optimization based on bees swarm," <i>Enterprise Information Systems</i>, vol. 12, no. 4, pp. 373&ndash;397, 2018, doi: 10.1080/17517575.2017.1304579.</li>
+<li>X.-Q. Pham and E.-N. Huh, "Towards task scheduling in a cloud-fog computing system," in <i>Proc. APNOMS</i>, 2016, pp. 1&ndash;4, doi: 10.1109/APNOMS.2016.7737240.</li>
+<li>R. Deng, R. Lu, C. Lai, T. H. Luan, and H. Liang, "Optimal workload allocation in fog-cloud computing toward balanced delay and power consumption," <i>IEEE Internet of Things Journal</i>, vol. 3, no. 6, pp. 1171&ndash;1181, 2016, doi: 10.1109/JIOT.2016.2565516.</li>
+<li>B. Jamil, M. Shojafar, I. Ahmed, A. Ullah, K. Munir, and H. Ijaz, "A job scheduling algorithm for delay and performance optimization in fog computing," <i>Concurrency and Computation: Practice and Experience</i>, vol. 32, no. 7, e5581, 2020, doi: 10.1002/cpe.5581.</li>
+<li>T. Aladwani, "Scheduling IoT healthcare tasks in fog computing based on their importance," <i>Procedia Computer Science</i>, vol. 163, pp. 560&ndash;569, 2019, doi: 10.1016/j.procs.2019.12.138.</li>
+<li>H. A. Khattak, H. Arshad, S. ul Islam, G. Ahmed, S. Jabbar, A. M. Sharif, and S. Khalid, "Utilization and load balancing in fog servers for health applications," <i>EURASIP J. Wireless Communications and Networking</i>, vol. 2019, art. 91, 2019, doi: 10.1186/s13638-019-1395-3.</li>
+<li>F. M. Talaat, M. S. Saraya, A. I. Saleh, H. A. Ali, and S. H. Ali, "A load balancing and optimization strategy (LBOS) using reinforcement learning in fog computing environment," <i>J. Ambient Intelligence and Humanized Computing</i>, vol. 11, no. 11, pp. 4951&ndash;4966, 2020, doi: 10.1007/s12652-020-01768-8.</li>
+<li>S. Tuli et al., "HealthFog: An ensemble deep learning based smart healthcare system for automatic diagnosis of heart diseases in integrated IoT and fog computing environments," <i>Future Generation Computer Systems</i>, vol. 104, pp. 187&ndash;200, 2020, doi: 10.1016/j.future.2019.10.043.</li>
+<li>M. K. Hussein and M. H. Mousa, "Efficient task offloading for IoT-based applications in fog computing using ant colony optimization," <i>IEEE Access</i>, vol. 8, pp. 37191&ndash;37201, 2020, doi: 10.1109/ACCESS.2020.2975741.</li>
+<li>D. Hoang and T. D. Dang, "FBRC: Optimization of task scheduling in fog-based region and cloud," in <i>Proc. IEEE Trustcom/BigDataSE/ICESS</i>, 2017, pp. 1109&ndash;1114, doi: 10.1109/Trustcom/BigDataSE/ICESS.2017.360.</li>
+<li>R. M. Abdelmoneem, A. Benslimane, and E. Shaaban, "Mobility-aware task scheduling in cloud-Fog IoT-based healthcare architectures," <i>Computer Networks</i>, vol. 179, art. 107348, 2020, doi: 10.1016/j.comnet.2020.107348.</li>
+</ol>
+</body></html>

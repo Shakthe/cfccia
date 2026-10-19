@@ -1,0 +1,46 @@
+# Live fog testbed: 3 fog nodes of different sizes, a cloud node behind an
+# emulated WAN link, and the scheduling gateway.
+#   docker compose up -d
+#   docker compose run --rm wearables --patients 80 --duration 90
+#   open http://localhost:8000
+x-node: &node
+  image: shakthe1311/vitalwatch-fog:v1
+  build: .
+  restart: unless-stopped
+
+services:
+  fog-1:            # ward A gateway, Raspberry Pi 4 class
+    <<: *node
+    environment: { ROLE: node, NODE_NAME: fog-1, CORES: "2" }
+    cpus: 0.6
+  fog-2:            # ICU gateway, Jetson Nano class
+    <<: *node
+    environment: { ROLE: node, NODE_NAME: fog-2, CORES: "2" }
+    cpus: 1.0
+  fog-3:            # hospital fog server, Intel NUC class
+    <<: *node
+    environment: { ROLE: node, NODE_NAME: fog-3, CORES: "3" }
+    cpus: 2.0
+  cloud:            # cloud VM pool
+    <<: *node
+    environment: { ROLE: node, NODE_NAME: cloud, CORES: "4" }
+    cpus: 3.0
+  cloud-wan:        # adds 70 ms +/- 10 ms round-trip delay on the cloud link
+    image: shakthe1311/vitalwatch-fog:v1
+    network_mode: "service:cloud"
+    cap_add: [NET_ADMIN]
+    user: root
+    entrypoint: ["sh", "-c", "tc qdisc replace dev eth0 root netem delay 70ms 10ms && tc qdisc show dev eth0 && exec sleep infinity"]
+    healthcheck: { disable: true }
+    depends_on:
+      cloud: { condition: service_started, restart: true }
+  gateway:
+    <<: *node
+    environment: { ROLE: gateway, POLICY: laps }
+    ports: ["8000:8000"]
+    depends_on: [fog-1, fog-2, fog-3, cloud]
+  wearables:
+    image: shakthe1311/vitalwatch-fog:v1
+    environment: { ROLE: wearables, GATEWAY_URL: "http://gateway:8000" }
+    profiles: ["load"]
+    depends_on: [gateway]

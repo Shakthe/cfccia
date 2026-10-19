@@ -1,0 +1,8 @@
+ ---> c69c9048283e
+Step 13/13 : ENTRYPOINT ["testbed/entrypoint.sh"]
+ ---> Running in c67416ff8cc5
+ ---> Removed intermediate container c67416ff8cc5
+ ---> 036b86c9d6ee
+Successfully built 036b86c9d6ee
+Successfully tagged shakthe1311/vitalwatch-fog:v1
+Successfully tagged shakthe1311/vitalwatch-fog:latest
